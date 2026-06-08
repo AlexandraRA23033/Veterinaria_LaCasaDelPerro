@@ -1,16 +1,22 @@
-# React + Vite
+# Veterinaria "La Casa del Perro"
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de gestión modular desarrollado con **React** y **PersephoneCSS**.
 
-Currently, two official plugins are available:
+## Instrucciones para el equipo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Para empezar a trabajar, sigue estos pasos:
 
-## React Compiler
+1. **Clonar el proyecto:**
+   `git clone [PEGA_AQUÍ_TU_LINK_DE_GITHUB]`
+2. **Entrar a la carpeta:**
+   `cd Veterinaria_LaCasaDelPerro`
+3. **Cambiar a la rama de desarrollo:**
+   `git checkout desarrollo`
+4. **Instalar dependencias:**
+   `npm install`
+5. **Crear tu rama personal:**
+   `git checkout -b modulo-[tu-nombre]`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+##  Reglas de Oro
+- Nunca trabajes directamente en `desarrollo` ni en `main`.
+- Antes de unir tus cambios, asegúrate de que el proyecto corre sin errores con `npm run dev`.
