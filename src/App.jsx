@@ -1,99 +1,191 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import './main.css';
-// Arriba de todo, junto a los otros imports
-import Login from './componentes/autenticacion/Login';
+import Inicio from "./componentes/panel-control/inicio";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import { useState } from "react";
+import "./main.css";
+import "./App.css";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import RutaProtegida from "./componentes/autenticacion/RutaProtegida";
+import Login from "./componentes/autenticacion/Login";
+import Registro from "./componentes/autenticacion/Registro";
 
-
-// Creamos un componente interno para poder usar useNavigate
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navbarActive, setNavbarActive] = useState(false);
-  const navigate = useNavigate(); // Herramienta para navegar por código
+  const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // ESTA FUNCIÓN ES LA CLAVE:
-  // Primero cierra todo, y LUEGO te mueve de página manualmente.
+  const rutasSinSidebar = ["/", "/ingresar", "/registro"];
+  const mostrarSidebar = usuario && !rutasSinSidebar.includes(location.pathname);
+
   const goTo = (path) => {
     setSidebarOpen(false);
     setNavbarActive(false);
-    document.body.style.overflow = "auto";
-    navigate(path); // Navega instantáneamente
+    navigate(path);
+  };
+
+  const handleLogout = () => {
+    logout();
+    goTo("/ingresar");
   };
 
   return (
-    <div className="bg-claro" style={{ minHeight: '100vh' }}>
-      {/* NAVBAR */}
+    <>
       <nav className="navbar--primary">
-        <span className="nav-brand"> La Casa del Perro</span>
-        <button 
-          className={`nav-toggle ${navbarActive ? 'is-active' : ''}`} 
-          onClick={(e) => {
-            e.preventDefault();
-            setNavbarActive(!navbarActive);
-          }}
+        <span className="nav-brand pointer" onClick={() => goTo("/")}>
+          🐾 La Casa del Perro
+        </span>
+        <button
+          className={`nav-toggle ${navbarActive ? "is-active" : ""}`}
+          onClick={() => setNavbarActive(!navbarActive)}
         >
           &#9776;
         </button>
-        <ul className={`nav-menu ${navbarActive ? 'is-active' : ''}`}>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/'); }}>Inicio</a></li>
-          <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/ingresar'); }}>Login</a></li>
-
+        <ul className={`nav-menu ${navbarActive ? "is-active" : ""}`}>
+          <li>
+            <a href="#" onClick={(e) => { e.preventDefault(); goTo("/"); }}>
+              Inicio
+            </a>
+          </li>
+          {!usuario ? (
+            <>
+              <li>
+                <a href="#" onClick={(e) => { e.preventDefault(); goTo("/ingresar"); }}>
+                  Iniciar sesión
+                </a>
+              </li>
+              <li>
+                <a href="#" onClick={(e) => { e.preventDefault(); goTo("/registro"); }}>
+                  Registrarse
+                </a>
+              </li>
+            </>
+          ) : (
+            <li>
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); handleLogout(); }}
+                className="text-light fw-bold"
+              >
+                Cerrar sesión ({usuario.nombre_completo?.split(" ")[0]})
+              </a>
+            </li>
+          )}
         </ul>
       </nav>
 
-      {/* OVERLAY */}
-      <div 
-        className={`sidebar-overlay ${sidebarOpen }`} 
-        onClick={() => { setSidebarOpen(false); setNavbarActive(false); }}
-      ></div>
+      {mostrarSidebar && (
+        <div
+          className={`sidebar-overlay ${sidebarOpen}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <div className="main-wrapper has-navbar">
-        {/* SIDEBAR */}
-        <aside className={`sidebar-main sidebar-secondary ${sidebarOpen ? 'is-open' : ''}`}>
-          <div className="sidebar-header">Menú Principal</div>
-          <ul className="sidebar-menu">
-            <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/expedientes'); }}>Mascotas</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/citas'); }}>Citas</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/inventario'); }}>Inventario</a></li>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); goTo('/dashboard'); }}>Estadísticas</a></li>
-          </ul>
-        </aside>
+      {mostrarSidebar ? (
+        <div className="main-wrapper has-navbar">
+          <aside className={`sidebar-main sidebar-secondary ${sidebarOpen ? "is-open" : ""}`}>
+            <header className="sidebar-header">
+              <strong>Menú</strong> —{" "}
+              {usuario.rol === "admin" ? "Administrador" : "Cliente"}
+            </header>
+            <ul className="sidebar-menu">
+              {usuario.rol === "admin" ? (
+                <>
+                  <li>
+                    <a href="#" onClick={(e) => { e.preventDefault(); goTo("/dashboard-admin"); }}>
+                      Panel de control
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" onClick={(e) => { e.preventDefault(); goTo("/inventario"); }}>
+                      Inventario
+                    </a>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <a href="#" onClick={(e) => { e.preventDefault(); goTo("/expedientes"); }}>
+                      Mis mascotas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" onClick={(e) => { e.preventDefault(); goTo("/citas"); }}>
+                      Mis citas
+                    </a>
+                  </li>
+                </>
+              )}
+            </ul>
+          </aside>
 
-        {/* BOTÓN TOGGLE SIDEBAR */}
-        <button 
-          className={`sidebar-toggle-btn ${sidebarOpen ? 'is-open' : ''}`} 
-          onClick={(e) => {
-            e.preventDefault();
-            setSidebarOpen(!sidebarOpen);
-          }}
-        >
-          &#9776;
-        </button>
+          <button
+            className={`sidebar-toggle-btn ${sidebarOpen ? "is-open" : ""}`}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? "✕" : "☰"}
+          </button>
 
-        <main className="main-content">
-          <div className="container">
+          <main className="main-content">
             <Routes>
-              <Route path="/" element={<div className="card card-light"><div className="card-body"><h1>Inicio</h1><p>¡Dime si ahora sí cambia al primer clic!</p></div></div>} />
-              <Route path="/expedientes" element={<h1>Módulo Mascotas</h1>} />
-              <Route path="/citas" element={<h1>Módulo Citas</h1>} />
-              <Route path="/inventario" element={<h1>Módulo Inventario</h1>} />
-              <Route path="/dashboard" element={<h1>Módulo Estadísticas</h1>} />
+              <Route path="/dashboard-admin" element={
+                <RutaProtegida rolRequerido="admin">
+                  <div className="container mt-3">
+                    <h1>Panel Admin</h1>
+                  </div>
+                </RutaProtegida>
+              } />
+              <Route path="/inventario" element={
+                <RutaProtegida rolRequerido="admin">
+                  <div className="container mt-3">
+                    <h1>Inventario</h1>
+                  </div>
+                </RutaProtegida>
+              } />
+              <Route path="/expedientes" element={
+                <RutaProtegida rolRequerido="usuario">
+                  <div className="container mt-3">
+                    <h1>Mis mascotas</h1>
+                  </div>
+                </RutaProtegida>
+              } />
+              <Route path="/citas" element={
+                <RutaProtegida rolRequerido="usuario">
+                  <div className="container mt-3">
+                    <h1>Mis citas</h1>
+                  </div>
+                </RutaProtegida>
+              } />
+            </Routes>
+          </main>
+        </div>
+      ) : (
+        <main>
+          <div className="container mt-3">
+            <Routes>
+              <Route path="/" element={<Inicio />} />
               <Route path="/ingresar" element={<Login />} />
+              <Route path="/registro" element={<Registro />} />
             </Routes>
           </div>
         </main>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
-// El componente principal solo envuelve todo en el Router
-function App() {
+export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
-
-export default App;
