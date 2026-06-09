@@ -2,6 +2,29 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registrarUsuario, buscarUsuario } from '../../base-datos/configuracion';
 
+// Función que evalúa la seguridad de la contraseña
+const evaluarPassword = (password) => {
+  if (!password) return null;
+
+  let puntos = 0;
+  const criterios = {
+    longitud: password.length >= 8,
+    mayuscula: /[A-Z]/.test(password),
+    numero: /[0-9]/.test(password),
+    especial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+  };
+
+  puntos = Object.values(criterios).filter(Boolean).length;
+
+  if (password.length < 6) return { nivel: 'invalida', texto: 'Muy corta — mínimo 6 caracteres', clase: 'danger' };
+  if (puntos <= 1)         return { nivel: 'baja',     texto: 'Seguridad baja',   clase: 'danger'  };
+  if (puntos === 2)        return { nivel: 'media',    texto: 'Seguridad media',  clase: 'warning' };
+  if (puntos === 3)        return { nivel: 'alta',     texto: 'Seguridad alta',   clase: 'success' };
+  if (puntos === 4)        return { nivel: 'fuerte',   texto: 'Contraseña fuerte ', clase: 'success' };
+
+  return null;
+};
+
 const Registro = () => {
   const navigate = useNavigate();
   const [datos, setDatos] = useState({
@@ -14,10 +37,15 @@ const Registro = () => {
   const [error, setError] = useState('');
   const [exito, setExito] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const [seguridad, setSeguridad] = useState(null);
 
   const handleInputChange = (e) => {
-    setDatos({ ...datos, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setDatos({ ...datos, [name]: value });
     if (error) setError('');
+    if (name === 'password') {
+      setSeguridad(evaluarPassword(value));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -46,116 +74,143 @@ const Registro = () => {
   };
 
   return (
-    <section
-      style={{
-        minHeight: 'calc(100vh - 56px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1rem',
-        background: 'linear-gradient(135deg, #EFEBCE 0%, #D8A39D33 100%)'
-      }}
-    >
-      <article
-        className="card card-light shadow-lg"
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          maxWidth: '820px',
-          width: '100%',
-          padding: '0',
-          overflow: 'hidden',
-          borderRadius: '16px'
-        }}
-      >
-        {/* Panel decorativo */}
-        <figure
-          className="hide-mobile"
-          style={{
-            flex: '1',
-            margin: '0',
-            backgroundImage: 'url("https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=1000&auto=format&fit=crop")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            minHeight: '560px'
-          }}
-        />
+    <div className="container mt-3">
+      <div className="row j-cont-cent">
+        <div className="col-md-9 col-lg-7">
+          <div className="card br-3 overflow-hidden">
+            <div className="row">
 
-        {/* Formulario */}
-        <div style={{ flex: '1', padding: '3rem 2.5rem' }}>
-          <header style={{ marginBottom: '1.75rem' }}>
-            <h2 className="text-accent" style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>
-              Crear cuenta
-            </h2>
-            <p className="text-muted" style={{ fontSize: '0.88rem' }}>
-              Registra tus datos para gestionar a tus mascotas
-            </p>
-          </header>
-
-          {error && (
-            <aside className="danger alerta mb-3" role="alert">⚠️ {error}</aside>
-          )}
-          {exito && (
-            <aside className="success alerta mb-3" role="alert">
-              ✅ ¡Cuenta creada! Redirigiendo al login...
-            </aside>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <fieldset style={{ border: 'none', padding: '0', margin: '0' }}>
-              <div className="form-group mb-3">
-                <label className="label" htmlFor="nombre_completo">Nombre completo</label>
-                <input type="text" id="nombre_completo" name="nombre_completo"
-                  className="input" placeholder="Ana García López"
-                  onChange={handleInputChange} required />
+              <div className="col-md-6">
+                <img
+                  src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=800&auto=format&fit=crop"
+                  alt="Perro tierno"
+                  className="d-block br-2 img-fluid"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               </div>
 
-              <div className="form-group mb-3">
-                <label className="label" htmlFor="correo">Correo electrónico</label>
-                <input type="email" id="correo" name="correo"
-                  className="input" placeholder="ejemplo@ues.edu.sv"
-                  onChange={handleInputChange} required />
+              <div className="col-md-6 p-3">
+                <header>
+                  <h2 className="text-accent fs-2 mb-1">Crear cuenta</h2>
+                  <p className="text-muted">Registra tus datos para gestionar a tus mascotas</p>
+                </header>
+
+                {error && (
+                  <aside className="danger alerta mb-2" role="alert">
+                     {error}
+                  </aside>
+                )}
+                {exito && (
+                  <aside className="success alerta mb-2" role="alert">
+                     ¡Cuenta creada! Redirigiendo...
+                  </aside>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label className="label" htmlFor="nombre_completo">Nombre completo</label>
+                    <input
+                      type="text"
+                      id="nombre_completo"
+                      name="nombre_completo"
+                      className="input"
+                      placeholder="Ana García López"
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label" htmlFor="correo">Correo electrónico</label>
+                    <input
+                      type="email"
+                      id="correo"
+                      name="correo"
+                      className="input"
+                      placeholder="ejemplo@ues.edu.sv"
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label" htmlFor="telefono">Teléfono</label>
+                    <input
+                      type="text"
+                      id="telefono"
+                      name="telefono"
+                      className="input"
+                      placeholder="7000-0000"
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label" htmlFor="password">Contraseña</label>
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      className="input"
+                      placeholder="Mínimo 6 caracteres"
+                      onChange={handleInputChange}
+                      required
+                    />
+
+                    {/* Medidor de seguridad */}
+                    {seguridad && (
+                      <aside className={`${seguridad.clase} alerta mt-1`} role="status">
+                        {seguridad.texto}
+                      </aside>
+                    )}
+
+                    {/* Criterios de mejora — solo si la seguridad no es fuerte */}
+                    {seguridad && seguridad.nivel !== 'fuerte' && datos.password.length >= 6 && (
+                      <div className="mt-1">
+                        <p className="text-muted fs-small mb-1">Para mejorar tu contraseña agrega:</p>
+                        {datos.password.length < 8 && (
+                          <span className="warning badge mb-1 mr-1">+ 8 caracteres</span>
+                        )}
+                        {!/[A-Z]/.test(datos.password) && (
+                          <span className="warning badge mb-1 mr-1">+ Mayúscula</span>
+                        )}
+                        {!/[0-9]/.test(datos.password) && (
+                          <span className="warning badge mb-1 mr-1">+ Número</span>
+                        )}
+                        {!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(datos.password) && (
+                          <span className="warning badge mb-1 mr-1">+ Símbolo (!@#...)</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-primary btn-block btn-md"
+                    disabled={cargando || exito || seguridad?.nivel === 'invalida'}
+                  >
+                    {cargando ? 'Creando cuenta...' : 'Registrarse'}
+                  </button>
+                </form>
+
+                <footer className="text-center mt-2">
+                  <span className="text-muted">¿Ya tienes cuenta? </span>
+                  <button
+                    type="button"
+                    className="text-accent fw-bold"
+                    onClick={() => navigate('/ingresar')}
+                  >
+                    Inicia sesión
+                  </button>
+                </footer>
               </div>
 
-              <div className="form-group mb-3">
-                <label className="label" htmlFor="telefono">Teléfono</label>
-                <input type="text" id="telefono" name="telefono"
-                  className="input" placeholder="7000-0000"
-                  onChange={handleInputChange} required />
-              </div>
-
-              <div className="form-group mb-4">
-                <label className="label" htmlFor="password">Contraseña</label>
-                <input type="password" id="password" name="password"
-                  className="input" placeholder="Mínimo 6 caracteres"
-                  onChange={handleInputChange} required />
-              </div>
-            </fieldset>
-
-            <button
-              type="submit"
-              className="btn-primary btn-block shadow-md"
-              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
-              disabled={cargando || exito}
-            >
-              {cargando ? 'Creando cuenta...' : 'Registrarse'}
-            </button>
-          </form>
-
-          <footer style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.88rem' }}>
-            <span className="text-muted">¿Ya tienes cuenta? </span>
-            <button
-              type="button"
-              className="text-accent fw-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.88rem' }}
-              onClick={() => navigate('/ingresar')}
-            >
-              Inicia sesión
-            </button>
-          </footer>
+            </div>
+          </div>
         </div>
-      </article>
-    </section>
+      </div>
+    </div>
   );
 };
 

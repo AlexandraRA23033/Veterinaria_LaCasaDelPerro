@@ -34,124 +34,87 @@ const Login = () => {
   };
 
   return (
-    <section
-      style={{
-        minHeight: 'calc(100vh - 56px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1rem',
-        background: 'linear-gradient(135deg, #EFEBCE 0%, #D8A39D33 100%)'
-      }}
-    >
-      <article
-        className="card card-light shadow-lg"
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          maxWidth: '820px',
-          width: '100%',
-          padding: '0',
-          overflow: 'hidden',
-          borderRadius: '16px'
-        }}
-      >
-        {/* Panel izquierdo decorativo */}
-        <div
-          className="bg-primary"
-          style={{
-            flex: '1',
-            background: 'linear-gradient(160deg, #BB8588 0%, #D8A39D 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '3rem 2rem',
-            minHeight: '420px'
-          }}
-        >
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🐾</div>
-          <h2
-            className="text-light"
-            style={{ fontFamily: 'Georgia, serif', textAlign: 'center', fontSize: '1.6rem', marginBottom: '0.75rem' }}
-          >
-            La Casa del Perro
-          </h2>
-          <p className="text-light" style={{ textAlign: 'center', opacity: 0.85, fontSize: '0.9rem', lineHeight: '1.6' }}>
-            Salud y bienestar para tus mascotas. Inicia sesión para gestionar tus citas.
-          </p>
-        </div>
+    <div className="container mt-3">
+      <div className="row j-cont-cent">
+        <div className="col-md-9 col-lg-7">
+          <div className="card shadow-sm br-3 overflow-hidden">
+            <div className="row">
+              <div className="col-md-6 bg-accent d-flex f-colum align-item j-cont-cent text-center p-3">
+                <span className="fs-1">🐾</span>
+                <h2 className="text-light fw-bold mt-3 mb-2">La Casa del Perro</h2>
+                <div className="badge badge-pildora bg-warning text-dark mt-2 mb-2"> Clínica Veterinaria</div>
+                <p className="text-light">
+                  Salud y bienestar para tus mascotas. Inicia sesión para gestionar tus citas.
+                </p>
+              </div>
 
-        {/* Panel derecho: formulario */}
-        <div style={{ flex: '1', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <header style={{ marginBottom: '2rem' }}>
-            <h2 className="text-accent" style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>
-              Iniciar sesión
-            </h2>
-            <p className="text-muted" style={{ fontSize: '0.88rem' }}>
-              Ingresa tus credenciales para continuar
-            </p>
-          </header>
+              {/* Panel derecho: formulario con acentos rosa */}
+              <div className="col-md-6 p-3">
+                <header>
+                  <h2 className="text-primary fs-2 mb-1">Iniciar sesión</h2>
+                  <p className="text-muted">Ingresa tus credenciales para continuar</p>
+                </header>
 
-          {error && (
-            <aside className="danger alerta mb-3" role="alert">
-              ⚠️ {error}
-            </aside>
-          )}
+                {error && (
+                  <aside className="danger alerta mb-4" role="alert">
+                    {error}
+                  </aside>
+                )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group mb-3">
-              <label className="label" htmlFor="correo-login">Correo electrónico</label>
-              <input
-                type="email"
-                id="correo-login"
-                name="correo"
-                className="input"
-                placeholder="ejemplo@ues.edu.sv"
-                onChange={handleChange}
-                required
-                autoComplete="email"
-              />
+                <form onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label className="label" htmlFor="correo-login">Correo electrónico</label>
+                    <input
+                      type="email"
+                      id="correo-login"
+                      name="correo"
+                      className="input"
+                      placeholder="ejemplo@ues.edu.sv"
+                      onChange={handleChange}
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label" htmlFor="password-login">Contraseña</label>
+                    <input
+                      type="password"
+                      id="password-login"
+                      name="password"
+                      className="input"
+                      placeholder="••••••••"
+                      onChange={handleChange}
+                      required
+                      autoComplete="current-password"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-info btn-block btn-md"
+                    disabled={cargando}
+                  >
+                    {cargando ? 'Verificando...' : 'Ingresar'}
+                  </button>
+                </form>
+
+                <footer className="text-center">
+                  <span className="text-muted">¿Aún no tienes cuenta? </span>
+                  <button
+                    type="button"
+                    className="text-accent fw-bold"
+                    onClick={() => navigate('/registro')}
+                  >
+                    Regístrate aquí
+                  </button>
+                </footer>
+              </div>
             </div>
-
-            <div className="form-group mb-4">
-              <label className="label" htmlFor="password-login">Contraseña</label>
-              <input
-                type="password"
-                id="password-login"
-                name="password"
-                className="input"
-                placeholder="••••••••"
-                onChange={handleChange}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="btn-primary btn-block shadow-md"
-              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
-              disabled={cargando}
-            >
-              {cargando ? 'Verificando...' : 'Ingresar'}
-            </button>
-          </form>
-
-          <footer style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.88rem' }}>
-            <span className="text-muted">¿Aún no tienes cuenta? </span>
-            <button
-              type="button"
-              className="text-accent fw-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.88rem' }}
-              onClick={() => navigate('/registro')}
-            >
-              Regístrate aquí
-            </button>
-          </footer>
+          </div>
         </div>
-      </article>
-    </section>
+      </div>
+    </div>
   );
 };
 
