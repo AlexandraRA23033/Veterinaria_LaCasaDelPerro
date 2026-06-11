@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import RutaProtegida from "./componentes/autenticacion/RutaProtegida";
 import Login from "./componentes/autenticacion/Login";
 import Registro from "./componentes/autenticacion/Registro";
+import DashboardAdmin from "./componentes/panel-control/DashboardAdmin";
+import Gestion from "./componentes/panel-control/Gestion";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -74,7 +76,9 @@ function AppContent() {
               {usuario.rol === "admin" ? (
                 <>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); goTo("/dashboard-admin"); }}>Panel de control</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); goTo("/gestion"); }}>Gestion</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); goTo("/inventario"); }}>Inventario</a></li>
+                  
                 </>
               ) : (
                 <>
@@ -89,7 +93,8 @@ function AppContent() {
           </button>
           <main className="main-content">
             <Routes>
-              <Route path="/dashboard-admin" element={<RutaProtegida rolRequerido="admin"><div className="container mt-3"><h1>Panel Admin</h1></div></RutaProtegida>} />
+              <Route path="/dashboard-admin" element={<RutaProtegida rolRequerido="admin"> <DashboardAdmin /> </RutaProtegida>} />
+              <Route path="/gestion" element={<RutaProtegida rolRequerido="admin"> <Gestion /> </RutaProtegida>} />
               <Route path="/inventario" element={<RutaProtegida rolRequerido="admin"><div className="container mt-3"><h1>Inventario</h1></div></RutaProtegida>} />
               <Route path="/expedientes" element={<RutaProtegida rolRequerido="usuario"><div className="container mt-3"><h1>Mis mascotas</h1></div></RutaProtegida>} />
               <Route path="/citas" element={<RutaProtegida rolRequerido="usuario"><div className="container mt-3"><h1>Mis citas</h1></div></RutaProtegida>} />
