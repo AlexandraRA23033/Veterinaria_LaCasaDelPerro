@@ -17,8 +17,6 @@ export const configurarBD = async () => {
           rol: "admin",
         });
       }
-      if (!db.objectStoreNames.contains("propietarios"))
-        db.createObjectStore("propietarios", { keyPath: "dui" });
       if (!db.objectStoreNames.contains("pacientes"))
         db.createObjectStore("pacientes", {
           keyPath: "id",
