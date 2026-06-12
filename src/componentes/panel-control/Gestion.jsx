@@ -11,15 +11,14 @@ function ModalMascotas({usuario, onCerrar, onActualizar}){
     const [mascotaElim, setMascotaElim] = useState(null);
 
     useEffect(() =>{
-        if(usuario) cargarMascotas();
+        if(!usuario) return;
 
-    },[usuario]);
-
-    async function cargarMascotas() {
+        async function cargarMascotas() {
         setCargando(true);
         try{
             const db = await configurarBD();
             const todosLosPacientes = await db.getAll("pacientes");
+            //filtramos las mascotas que le pertenecen al usuario actual
             setMascotas(todosLosPacientes.filter((p) => p.emailUsuario == usuario.correo));
         }catch (err){
             console.log("Error al cargar mascotas del usuario:", err);
@@ -27,13 +26,22 @@ function ModalMascotas({usuario, onCerrar, onActualizar}){
             setCargando(false);
         }
     }
+    cargarMascotas();
+
+    },[usuario]);
+
+    
 
     async function confirmarEliminar() {
         try{
             const db = await configurarBD();
+            //eliminamos de IndexedDB
             await db.delete("pacientes", mascotaElim.id);
+            //filtramos el estado local para quitar la mascota borrada al instante
+            const mascotasRestantes = mascotas.filter((m) => m.id !==mascotaElim.id);
+            setMascotas(mascotasRestantes);
+            //cerramos el modal alerta y notificamos a la vista de atras
             setMascotaElim(null);
-            cargarMascotas();
             onActualizar();
         }catch(err){
             console.error("Error al eliminar mascota:", err);
