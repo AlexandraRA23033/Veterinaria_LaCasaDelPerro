@@ -57,3 +57,24 @@ export const actualizarUsuario = async (usuario) => {
   const db = await configurarBD();
   return db.put("usuarios", usuario);
 };
+
+
+export const obtenerPacientes = async () => {
+  const db = await configurarBD();
+  return db.getAll("pacientes");
+};
+
+export const buscarPaciente = async (id) => {
+  const db = await configurarBD();
+  return db.get("pacientes", id);
+};
+
+export const actualizarPaciente = async (paciente) => {
+  const db = await configurarBD();
+  return db.put("pacientes", paciente);
+};
+
+export const eliminarPaciente = async (id) => {
+  const db = await configurarBD();
+  return db.delete("pacientes", id);
+};
