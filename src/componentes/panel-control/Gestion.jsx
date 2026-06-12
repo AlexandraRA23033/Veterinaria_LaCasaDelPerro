@@ -41,7 +41,7 @@ function ModalMascotas({usuario, onCerrar, onActualizar}){
     }
 
     function irAgregarMascota(){
-        navigate("./mascotas/formularioMascota", {
+        navigate("/mascotas/formularioMascotas", {
             state: {
                 correoUsuario: usuario.correo,
                 nombreUsuario: usuario.nombre_completo,
@@ -121,7 +121,7 @@ function ModalMascotas({usuario, onCerrar, onActualizar}){
                                             <td>{m.edad ?? "-"} años</td>
                                             <td>{m.peso ?? "-"} kg</td>
                                             <td> 
-                                                <span className={`badge ${m.vacunas ? "success" : "alert"}`}>{m.vacunas ? "Al día ✓" : "Pendiente"} </span>
+                                                <span className={`badge ${m.estaVacunado ? "success" : "alert"}`}>{m.estaVacunado ? "Al día ✓" : "Pendiente"} </span>
                                             </td>
                                             <td>{m.fechaRegistro ? new Date(m.fechaRegistro).toLocaleDateString("es-SV") : "-"}</td>
                                             <td>
@@ -211,7 +211,7 @@ export default function ListaMascotas(){
                     <p className="text-muted">{usuarios.length} usuario{usuarios.length !== 1 ? "s" : ""} registrado{usuarios.length !== 1 ? "s" : ""} </p>
 
                 </div>
-                <button className="btn-primary" onClick={() => navigate("/mascotas/nueva")}> + Nuevo registro</button>
+                <button className="btn-primary" onClick={() => navigate("/nuevo-expediente")}> + Nuevo registro</button>
             </div>
 
             <div className="form-group mb-2">
