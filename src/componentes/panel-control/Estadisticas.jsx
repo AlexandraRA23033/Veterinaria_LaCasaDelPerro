@@ -23,7 +23,7 @@ const Estadisticas = () =>{
                 ))}
             </div>
 
-            {/*Marcadores de posi ion para graficos avanzados */}
+            {/*Marcadores de posicion para graficos avanzados */}
 
             <div className='row mt-2'>
 
@@ -31,7 +31,6 @@ const Estadisticas = () =>{
                     <div className='card br-3 p-3' style={{minHeight:'300px'}}>
                         <h3 className='text-accent fs-3 mb-1'>Flujo de Citas Mensuales</h3>
                         <p className='text-muted mb-3'>Reporte analítico de visitas a la veterinaria</p>
-                        {/*Contenedor simulador de garifico */}
                         <div className='bg-light br-2 d-flex j-cont-cent align-item' style={{height: '200px', border: '2px dashed #ccc'}}>
                             <span className='text-muted'>[Espacio reservado para Gráficos de Líneas / Recharts]</span>
                         </div>
@@ -42,7 +41,6 @@ const Estadisticas = () =>{
                     <div className='card br-3 p-3' style={{minHeight:'300px'}}>
                         <h3 className='text-accent fs-3 mb-1'>Especies Atendidas</h3>
                         <p className='text-muted mb-3'>Distribución por tipo de mascota</p>
-                        {/*Contenedor simulador de garifico circular */}
                         <div className='bg-light br-2 d-flex j-cont-cent align-item' style={{height: '200px', border: '2px dashed #ccc'}}>
                             <span className='text-muted'>[Grafico de Pastel]</span>
                         </div>

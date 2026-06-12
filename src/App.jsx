@@ -18,8 +18,9 @@ import Gestion from "./componentes/panel-control/Gestion";
 import FormularioExpediente from "./componentes/mascotas/formularioExpediente"; // ← import correcto
 import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // ← import correcto
 import AgendarCita from "./componentes/citas/AgendarCita";
-import EstadoCita from "./componentes/citas/EstadoCita";
-import ListaCitas from "./componentes/citas/ListaCitas";
+//import EstadoCita from "./componentes/citas/EstadoCita";
+//import ListaCitas from "./componentes/citas/ListaCitas";
+import VerMascotas from "./componentes/mascotas/VerMascotas";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -117,8 +118,6 @@ function AppContent() {
           )}
         </ul>
       </nav>
-
-      {/* ── OVERLAY sidebar ── */}
       {mostrarSidebar && (
         <div
           className={`sidebar-overlay ${sidebarOpen ? "is-active" : ""}`}
@@ -128,7 +127,6 @@ function AppContent() {
 
       {/* ── LAYOUT ── */}
       <div className={mostrarSidebar ? "main-wrapper has-navbar" : ""}>
-        {/* Sidebar — solo cuando hay sesión */}
         {mostrarSidebar && (
           <>
             <aside
@@ -160,7 +158,7 @@ function AppContent() {
                           goTo("/gestion");
                         }}
                       >
-                        🐾 Gestión
+                        Gestión
                       </a>
                     </li>
                     <li>
@@ -212,7 +210,6 @@ function AppContent() {
           </>
         )}
 
-        {/* ── UN SOLO <Routes> para toda la app ── */}
         <main className={mostrarSidebar ? "main-content" : ""}>
           <Routes>
             {/* Públicas */}
@@ -252,6 +249,10 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
+            <Route path="/mascotas/ver" element={
+              <RutaProtegida rolRequerido="admin"><VerMascotas />
+              </RutaProtegida>
+            }/>
             <Route
               path="/inventario"
               element={
@@ -281,7 +282,6 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
-            {/* Cualquier ruta no encontrada → inicio */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

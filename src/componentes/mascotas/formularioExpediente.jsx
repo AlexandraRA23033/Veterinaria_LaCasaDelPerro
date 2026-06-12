@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { configurarBD, buscarUsuario } from "../../base-datos/configuracion";
 
-const ESPECIES = ["Perro", "Gato", "Conejo", "Ave", "Reptil", "Otro"];
+const ESPECIES = ["Perro", "Gato", "Conejo", "Otro"];
 const SEXOS    = ["Macho", "Hembra"];
 
 const DUENO_INICIAL = {
@@ -114,7 +114,7 @@ export default function FormularioExpediente() {
       <div className="row j-cont-cent">
         <div className="col-md-6 text-center">
           <div className="card br-3 p-3 shadow-sm">
-            <span style={{ fontSize: "3rem" }}>🐾</span>
+            <span style={{ fontSize: "3rem" }}></span>
             <h2 className="text-success fw-bold mt-2 mb-1">¡Expediente creado!</h2>
             <p className="text-muted">
               Se registró a <strong>{dueno.nombre_completo}</strong> y su mascota <strong>{mascota.nombre}</strong> exitosamente.
@@ -144,7 +144,6 @@ export default function FormularioExpediente() {
 
         <div className="card br-3 shadow-sm p-3 mb-3">
           <div className="d-flex align-item gap-1 mb-2">
-            <span style={{ fontSize: "1.4rem" }}>👤</span>
             <h3 className="fs-3 fw-bold text-accent">Datos del Dueño</h3>
           </div>
           <div className="row">
@@ -218,7 +217,6 @@ export default function FormularioExpediente() {
 
         <div className="card br-3 shadow-sm p-3 mb-3">
           <div className="d-flex align-item gap-1 mb-2">
-            <span style={{ fontSize: "1.4rem" }}>🐾</span>
             <h3 className="fs-3 fw-bold text-accent">Datos de la Mascota</h3>
           </div>
           <div className="row">
@@ -281,10 +279,9 @@ export default function FormularioExpediente() {
           </div>
         </div>
 
-        {/* ── SECCIÓN 3: HISTORIAL MÉDICO ── */}
+        {/* ── HISTORIAL MÉDICO ── */}
         <div className="card br-3 shadow-sm p-3 mb-3">
           <div className="d-flex align-item gap-1 mb-2">
-            <span style={{ fontSize: "1.4rem" }}>🩺</span>
             <h3 className="fs-3 fw-bold text-accent">Historial Médico Inicial</h3>
           </div>
           <div className="row">
@@ -307,13 +304,12 @@ export default function FormularioExpediente() {
           </div>
         </div>
 
-        {/* Botones */}
         <div className="d-flex j-cont-end gap-1">
           <button type="button" className="btn-outline-secondary" onClick={() => navigate("/gestion")} disabled={guardando}>
             Cancelar
           </button>
           <button type="submit" className="btn-primary" disabled={guardando}>
-            {guardando ? "Guardando..." : "✅ Crear Expediente"}
+            {guardando ? "Guardando..." : "Crear Expediente"}
           </button>
         </div>
 
