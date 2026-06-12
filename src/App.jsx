@@ -17,6 +17,9 @@ import DashboardAdmin from "./componentes/panel-control/DashboardAdmin";
 import Gestion from "./componentes/panel-control/Gestion";
 import FormularioExpediente from "./componentes/mascotas/formularioExpediente"; // ← import correcto
 import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // ← import correcto
+import AgendarCita from "./componentes/citas/AgendarCita";
+import EstadoCita from "./componentes/citas/EstadoCita";
+import ListaCitas from "./componentes/citas/ListaCitas";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -273,10 +276,8 @@ function AppContent() {
             <Route
               path="/citas"
               element={
-                <RutaProtegida rolRequerido="usuario">
-                  <div className="container mt-3">
-                    <h1>Mis citas</h1>
-                  </div>
+                <RutaProtegida rolRequerido="admin">
+                  <AgendarCita/>
                 </RutaProtegida>
               }
             />
