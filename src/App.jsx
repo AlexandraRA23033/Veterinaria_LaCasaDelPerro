@@ -20,11 +20,77 @@ import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // �
 import AgendarCita from "./componentes/citas/AgendarCita";
 import EstadoCita from "./componentes/citas/EstadoCita";
 import ListaCitas from "./componentes/citas/ListaCitas";
+// Importaciones del Inventario Inteligente PEPS
+import TablaInventario from "./componentes/inventario/TablaInventario";
+import AlertaStock from "./componentes/inventario/AlertaStock";
+import { restarStockPEPS } from "./componentes/inventario/LogicaPEPS";
+import { obtenerProductosDB, obtenerLotesDB, actualizarLoteDB, eliminarLoteDB } from "./configuracion";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navbarActive, setNavbarActive] = useState(false);
   const { usuario, logout } = useAuth();
+
+  // Estados dinámicos vinculados a IndexedDB
+  const [productos, setProductos] = useState([]);
+  const [lotes, setLotes] = useState([]);
+  const [insumoSeleccionado, setInsumoSeleccionado] = useState("");
+  const [cantidadUsada, setCantidadUsada] = useState(1);
+
+  // Cargar registros automáticamente desde IndexedDB al abrir la App
+  useEffect(() => {
+    const cargarDatosInventario = async () => {
+      try {
+        const prodsDB = await obtenerProductosDB();
+        const lotesDB = await obtenerLotesDB();
+        setProductos(prodsDB);
+        setLotes(lotesDB);
+        if (prodsDB.length > 0) {
+          setInsumoSeleccionado(prodsDB[0].nombre);
+        }
+      } catch (err) {
+        console.error("Error al cargar datos del inventario desde IndexedDB", err);
+      }
+    };
+    cargarDatosInventario();
+  }, []);
+
+  // Algoritmo Operativo PEPS para el descuento automatizado en la base de datos
+  const manejarCitaCompletada = async (e) => {
+    e.preventDefault();
+    const cantidad = parseInt(cantidadUsada);
+
+    const lotesDelProducto = lotes.filter(l => l.productoNombre === insumoSeleccionado);
+    const lotesOriginalesProducto = [...lotesDelProducto];
+
+    const { lotesRestantes, error } = restarStockPEPS(lotesDelProducto, cantidad);
+
+    if (error) {
+      alert(`❌ Error operativo: ${error}`);
+      return;
+    }
+
+    try {
+      for (let loteOrig of lotesOriginalesProducto) {
+        const loteActualizado = lotesRestantes.find(l => l.id === loteOrig.id);
+        if (!loteActualizado) {
+          await eliminarLoteDB(loteOrig.id);
+        } else if (loteActualizado.cantidad !== loteOrig.cantidad) {
+          await actualizarLoteDB(loteActualizado);
+        }
+      }
+
+      const lotesActualizadosDB = await obtenerLotesDB();
+      setLotes(lotesActualizadosDB);
+
+      alert(`✅ Cita Procesada:\nSe han deducido ${cantidad} unidades de "${insumoSeleccionado}" de la BD local aplicando PEPS.`);
+    } catch (dbErr) {
+      alert("Error al guardar cambios en IndexedDB");
+    }
+  };
+
+
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -252,16 +318,52 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
+            
+           {/* Ruta del panel e interfaz del Inventario Inteligente PEPS*/}
             <Route
               path="/inventario"
               element={
                 <RutaProtegida rolRequerido="admin">
-                  <div className="container mt-3">
-                    <h1>Inventario</h1>
+                  <div style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
+                    <header style={{ marginBottom: '25px' }}>
+                      <h2 style={{ color: '#4E5748', marginBottom: '5px' }}>Panel de Inventario Inteligente</h2>
+                      <p style={{ color: '#B8B2A0', margin: 0, fontSize: '14px' }}>Gestión de Almacén Médica Vinculada a IndexedDB</p>
+                    </header>
+
+                    <AlertaStock productos={productos} lotes={lotes} />
+
+                    <div style={{ display: 'flex', gap: '25px', flexWrap: 'wrap', marginTop: '15px' }}>
+                      <div style={{ flex: '2', minWidth: '350px' }}>
+                        <TablaInventario productos={productos} lotes={lotes} />
+                      </div>
+
+                      <div style={{ flex: '1', minWidth: '280px' }}>
+                        <div className="form">
+                          <h3 style={{ color: '#2F332B', marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>Simulador: Descuento PEPS</h3>
+                          <form onSubmit={manejarCitaCompletada}>
+                            <div className="form-group">
+                              <label className="label">Medicamento Utilizado:</label>
+                              <select className="select" value={insumoSeleccionado} onChange={(e) => setInsumoSeleccionado(e.target.value)}>
+                                {productos.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                              </select>
+                            </div>
+                            <div className="form-group">
+                              <label className="label">Cantidad Utilizada:</label>
+                              <input type="number" className="input" min="1" value={cantidadUsada} onChange={(e) => setCantidadUsada(e.target.value)} />
+                            </div>
+                            <button type="submit" className="input" style={{ backgroundColor: '#4E5748', color: '#fff', fontWeight: 'bold', cursor: 'pointer', marginTop: '5px', width: '100%' }}>
+                              Simular Resta en Cita
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </RutaProtegida>
               }
             />
+
+
             {/* Usuario */}
             <Route
               path="/expedientes"
