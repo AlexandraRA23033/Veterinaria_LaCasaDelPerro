@@ -12,7 +12,6 @@ const DashboardAdmin = () =>{
 
     return(
         <div className='container mt-3'>
-            {/*Encabezado Principal */}
             <header className='mb-3'>
                 <h2 className='text-accent fs-1 mb-1'>Panel de Administración</h2>
                 <p className='text-muted'>Bienvenido de vuelta. Monitoreo global de La Casa del Perro</p>
