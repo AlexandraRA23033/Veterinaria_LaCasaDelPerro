@@ -18,8 +18,9 @@ import Gestion from "./componentes/panel-control/Gestion";
 import FormularioExpediente from "./componentes/mascotas/formularioExpediente"; // ← import correcto
 import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // ← import correcto
 import AgendarCita from "./componentes/citas/AgendarCita";
-import EstadoCita from "./componentes/citas/EstadoCita";
-import ListaCitas from "./componentes/citas/ListaCitas";
+//import EstadoCita from "./componentes/citas/EstadoCita";
+//import ListaCitas from "./componentes/citas/ListaCitas";
+import VerMascotas from "./componentes/mascotas/VerMascotas";
 
 
 
@@ -254,8 +255,25 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
+<<<<<<< HEAD
             
 
+=======
+            <Route path="/mascotas/ver" element={
+              <RutaProtegida rolRequerido="admin"><VerMascotas />
+              </RutaProtegida>
+            }/>
+            <Route
+              path="/inventario"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <div className="container mt-3">
+                    <h1>Inventario</h1>
+                  </div>
+                </RutaProtegida>
+              }
+            />
+>>>>>>> c7b79842df097fd6ffe9c6d708714e0a8512c3f7
             {/* Usuario */}
             <Route
               path="/expedientes"
