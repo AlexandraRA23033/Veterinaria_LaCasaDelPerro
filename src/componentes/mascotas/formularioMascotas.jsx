@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { configurarBD } from "../../base-datos/configuracion";
 
-const ESPECIES = ["Perro", "Gato", "Conejo", "Ave", "Reptil", "Otro"];
+const ESPECIES = ["Perro", "Gato", "Conejo", "Otro"];
 const SEXOS    = ["Macho", "Hembra"];
 
 const INICIAL = {
@@ -25,7 +25,6 @@ export default function FormularioMascotas() {
   const [error,    setError]    = useState("");
   const [exito,    setExito]    = useState(false);
 
-  // Si por algún motivo no hay state, redirigir
   if (!correoUsuario) {
     return (
       <div className="container mt-3">
@@ -89,7 +88,7 @@ export default function FormularioMascotas() {
       <div className="row j-cont-cent">
         <div className="col-md-6 text-center">
           <div className="card br-3 p-3 shadow-sm">
-            <span className="fs-1">🐾</span>
+            <span className="fs-1"></span>
             <h2 className="text-success fw-bold mt-2 mb-1">¡Mascota registrada!</h2>
             <p className="text-muted">
               <strong>{mascota.nombre}</strong> fue agregada al expediente de <strong>{nombreUsuario}</strong>.
@@ -104,7 +103,6 @@ export default function FormularioMascotas() {
   return (
     <div className="container mt-3 mb-3">
 
-      {/* Encabezado */}
       <div className="d-flex j-cont-bet align-item f-wrap gap-1 mb-3">
         <div>
           <h2 className="fs-2 fw-bold text-primary">Agregar Mascota</h2>
@@ -113,10 +111,9 @@ export default function FormularioMascotas() {
         <button className="btn-outline-secondary" onClick={() => navigate("/gestion")}>← Volver</button>
       </div>
 
-      {/* Tarjeta dueño — solo lectura, automático */}
       <div className="card br-3 shadow-sm p-3 mb-3">
         <h3 className="fs-3 fw-bold text-accent d-flex align-item gap-1">
-          👤 Dueño
+          Dueño
         </h3>
         <div className="card card-light br-2 p-2 mt-1">
           <div className="d-flex f-wrap gap-2">
@@ -143,7 +140,7 @@ export default function FormularioMascotas() {
         {/* Datos básicos */}
         <div className="card br-3 shadow-sm p-3 mb-3">
           <h3 className="fs-3 fw-bold text-accent d-flex align-item gap-1">
-            🐾 Datos de la Mascota
+            Datos de la Mascota
           </h3>
           <div className="row">
             <div className="col-md-6 mb-2">
@@ -207,7 +204,7 @@ export default function FormularioMascotas() {
         {/* Historial médico */}
         <div className="card br-3 shadow-sm p-3 mb-3">
           <h3 className="fs-3 fw-bold text-accent d-flex align-item gap-1">
-            🩺 Historial Médico Inicial
+             Historial Médico Inicial
           </h3>
           <div className="row">
             <div className="col-md-6 mb-2">
