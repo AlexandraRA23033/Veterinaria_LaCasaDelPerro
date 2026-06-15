@@ -28,6 +28,9 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navbarActive, setNavbarActive] = useState(false);
   const { usuario, logout } = useAuth();
+
+
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -268,6 +271,7 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
+>>>>>>> c7b79842df097fd6ffe9c6d708714e0a8512c3f7
             {/* Usuario */}
             <Route
               path="/expedientes"
