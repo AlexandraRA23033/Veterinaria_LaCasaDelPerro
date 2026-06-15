@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ListaCitas from './ListaCitas';
 
 // RÚBRICA: Catálogo estático de servicios con precios base establecidos para la veterinaria

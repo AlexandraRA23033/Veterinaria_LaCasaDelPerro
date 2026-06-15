@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const EstadoCita = ({ cita, alCambiarEstado }) => {
   const [procesando, setProcesando] = useState(false);
