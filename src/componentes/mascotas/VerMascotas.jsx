@@ -59,10 +59,9 @@ export default function VerMascotas() {
             </div>
 
             {/* ── Tarjeta del dueño — solo lectura ── */}
-            <div className="card br-3 shadow-sm p-3 mb-3">
+            <div className="card card-info br-3 shadow-sm p-3 mb-3">
                 <div className="d-flex align-item gap-1 mb-2">
-                    <span style={{ fontSize: "1.4rem" }}>👤</span>
-                    <h3 className="fs-3 fw-bold text-accent">Datos del Dueño</h3>
+                    <h3 className="fs-3 fw-bold text-light">Datos del Dueño</h3>
                 </div>
                 <div className="card card-light br-2 p-2">
                     <div className="d-flex f-wrap gap-3">
@@ -88,7 +87,6 @@ export default function VerMascotas() {
                 </div>
             </div>
 
-            {/* ── Tabla de mascotas ── */}
             <div className="card br-3 shadow-sm p-3">
                 <div className="d-flex j-cont-bet align-item f-wrap gap-1 mb-2">
                     <div className="d-flex align-item gap-1">
@@ -147,24 +145,23 @@ export default function VerMascotas() {
                                         <td>{m.fechaRegistro ? new Date(m.fechaRegistro).toLocaleDateString("es-SV") : "-"}</td>
                                         <td>
                                             <div className="d-flex gap-1 f-wrap">
-                                                {/* Ver expediente completo */}
                                                 <button
                                                     className="btn-success btn-sm"
                                                     onClick={() => navigate("/mascotas/expediente", {
                                                         state: { mascota: m, nombreUsuario, correoUsuario, telefonoUsuario },
                                                     })}
                                                 >
-                                                    📋 Expediente
+                                                    Expediente
                                                 </button>
 
                                                 {/* Editar mascota */}
                                                 <button
                                                     className="btn-outline-secondary btn-sm"
-                                                    onClick={() => navigate("/mascotas/editar", {
+                                                    onClick={() => navigate("/mascotas/expediente", {
                                                         state: { mascota: m, correoUsuario, nombreUsuario, telefonoUsuario },
                                                     })}
                                                 >
-                                                    ✏️ Editar
+                                                    Editar
                                                 </button>
 
                                                 {/* Eliminar mascota */}
@@ -172,7 +169,15 @@ export default function VerMascotas() {
                                                     className="btn-alert btn-sm"
                                                     onClick={() => setMascotaElim(m)}
                                                 >
-                                                    🗑 Eliminar
+                                                    Eliminar
+                                                </button>
+                                                  <button
+                                                    className="btn-outline-secondary btn-sm"
+                                                    onClick={() => navigate("/mascotas/editar", {
+                                                        state: { mascota: m, correoUsuario, nombreUsuario, telefonoUsuario },
+                                                    })}
+                                                >
+                                                    Cita
                                                 </button>
                                             </div>
                                         </td>
@@ -189,7 +194,7 @@ export default function VerMascotas() {
                 <div className="modal-alert is-open">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h3>⚠️ Eliminar mascota</h3>
+                            <h3>Eliminar mascota</h3>
                             <button className="modal-close" onClick={() => setMascotaElim(null)}>X</button>
                         </div>
                         <div className="modal-body">
