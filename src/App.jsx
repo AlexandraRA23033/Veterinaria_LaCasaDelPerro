@@ -21,7 +21,8 @@ import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
 import VerMascotas from "./componentes/mascotas/VerMascotas";
-import ExpedienteMascota from "./componentes/mascotas/expedienteMascota";
+import VerExpedienteMascota from "./componentes/mascotas/VerExpedienteMascota";
+import EditarExpediente from "./componentes/mascotas/editarMascota";
 
 
 
@@ -162,7 +163,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/gestion");
+                          goTo("/Dashboard-admin/gestion");
                         }}
                       >
                         Gestión
@@ -173,7 +174,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/inventario");
+                          goTo("/Dashboard-admin/inventario");
                         }}
                       >
                         Inventario
@@ -187,7 +188,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/expedientes");
+                          goTo("/Dasboard-usuario/Mascotas");
                         }}
                       >
                         Mis mascotas
@@ -233,7 +234,7 @@ function AppContent() {
               }
             />
             <Route
-              path="/gestion"
+              path="/Dashboard-admin/gestion"
               element={
                 <RutaProtegida rolRequerido="admin">
                   <Gestion />
@@ -265,11 +266,15 @@ function AppContent() {
               </RutaProtegida>
             }/>
             <Route path="/mascotas/expediente" element={
-              <RutaProtegida rolRequerido="admin"><ExpedienteMascota />
+              <RutaProtegida rolRequerido="admin"><VerExpedienteMascota />
+              </RutaProtegida>
+            }/>
+            <Route path="/mascotas/editar" element={
+              <RutaProtegida rolRequerido="admin"><EditarExpediente />
               </RutaProtegida>
             }/>
             <Route
-              path="/inventario"
+              path="//Dashboard-admin/inventario"
               element={
                 <RutaProtegida rolRequerido="admin">
                   <div className="container mt-3">

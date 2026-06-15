@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState} from 'react';
 import EstadoCita from './EstadoCita';
 
 const ListaCitas = ({ citas, alCambiarEstado }) => {
