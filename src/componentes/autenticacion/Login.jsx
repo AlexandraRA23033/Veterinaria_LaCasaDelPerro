@@ -48,7 +48,6 @@ const Login = () => {
                 </p>
               </div>
 
-              {/* Panel derecho: formulario con acentos rosa */}
               <div className="col-md-6 p-3">
                 <header>
                   <h2 className="text-primary fs-2 mb-1">Iniciar sesión</h2>

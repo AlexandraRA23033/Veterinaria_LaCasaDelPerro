@@ -21,6 +21,8 @@ import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
 import VerMascotas from "./componentes/mascotas/VerMascotas";
+import VerUsuario from "./componentes/usuarios/VerUsuarios";
+import EditarUsuario from "./componentes/usuarios/EditarUsuarios";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,7 +49,6 @@ function AppContent() {
 
   return (
     <>
-      {/* ── NAVBAR ── */}
       <nav className="navbar--dark">
         <h3
           className="nav-brand text-light"
@@ -120,7 +121,7 @@ function AppContent() {
       </nav>
       {mostrarSidebar && (
         <div
-          className={`sidebar-overlay ${sidebarOpen ? "is-active" : ""}`}
+          className={`sidebar-overlay ${sidebarOpen}`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -249,10 +250,14 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
-            <Route path="/mascotas/ver" element={
-              <RutaProtegida rolRequerido="admin"><VerMascotas />
-              </RutaProtegida>
-            }/>
+            <Route
+              path="/mascotas/ver"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <VerMascotas />
+                </RutaProtegida>
+              }
+            />
             <Route
               path="/inventario"
               element={
@@ -278,7 +283,23 @@ function AppContent() {
               path="/citas"
               element={
                 <RutaProtegida rolRequerido="admin">
-                  <AgendarCita/>
+                  <AgendarCita />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/usuarios/ver"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <VerUsuario />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/usuarios/editar"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <EditarUsuario />
                 </RutaProtegida>
               }
             />
