@@ -21,6 +21,7 @@ import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
 import VerMascotas from "./componentes/mascotas/VerMascotas";
+import ExpedienteMascota from "./componentes/mascotas/expedienteMascota";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -251,6 +252,10 @@ function AppContent() {
             />
             <Route path="/mascotas/ver" element={
               <RutaProtegida rolRequerido="admin"><VerMascotas />
+              </RutaProtegida>
+            }/>
+            <Route path="/mascotas/expediente" element={
+              <RutaProtegida rolRequerido="admin"><ExpedienteMascota />
               </RutaProtegida>
             }/>
             <Route
