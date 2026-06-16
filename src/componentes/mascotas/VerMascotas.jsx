@@ -152,7 +152,7 @@ export default function VerMascotas() {
 
                         <button
                           className="btn-outline-secondary btn-sm"
-                          onClick={() => navigate("/mascotas/cita", {
+                          onClick={() => navigate("/citas", {
                             state: { mascota: m, ...state },
                           })}
                         >

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { configurarBD } from "../../base-datos/configuracion";
 
-const EstadoCita = ({ cita, alCambiarEstado }) => {
+const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
     const [procesando, setProcesando] = useState(false);
-    const [citaAgendadaNotificada, setCitaAgendadaNotificada] = useState(false);
 
-    // 1. CREDENCIALES DE META DEVELOPERS (API)
-    const TOKEN = 'EAASPf8N8sxoBRlTa7tVtqyrsNZCAiLZCZCfOIMEM6EzgMW5ZAt0NiUpqjy4BKbZBmEgGZBVpcBVPXHBDBlLZA86wQzPDZCHXtedcTJB9nLUr658lzaoP4kQmDNWZB2wtUaGdYNZChUFMAszjt4IyyUS4l43CwvagPZAyCbf9tXx7e4aAZCjtcQWKR9nOSp0Eo9pYACFjEV92AQ6I4N8WBsjQjaxxmGPrRZCparEfNsW79SCk0tjVsDhEjbNQEmpksw7ppmHDBFn4SEC3jFMZCrhSHE8ZBdVZCBIR'; 
+    const TOKEN = 'EAASPf8N8sxoBRl8l7aZCbaoKXfl7eyV6WTui67l965ZAHkByBESCAe4JTgwrRP0YqrAJ3DxAvuJtt0C826mLfHQTKTBNBnr9GIiLGBiL0cde7hMbDLGnZA9r17wkgkXZCPrk9n01PH0NOxo6aVYlFZC9DL9ltkl8IofTUqzXrENZBNRspjvZCFlGNjBkZB6Cu2yuyhacHh8rXAwZA96ZAO5fPnhL1mCSDQ2IqR1nNxwZCMJp9c1lBjOBhWJ87h7fZAbRN7gwADiceUYKr3kG3xBNGAxDRtvMIwZDZD'; 
     const PHONE_ID = '1199483279910039'; 
     const TELEFONO_DESTINO = '50376948130'; 
 
@@ -27,8 +26,28 @@ const EstadoCita = ({ cita, alCambiarEstado }) => {
         }
     };
 
-    const handleNotificarAgendada = async () => {
+    // FUNCIÓN ÚNICA DE NOTIFICACIÓN TOTALMENTE DINÁMICA
+    const handleNotificarWhatsApp = async () => {
         setProcesando(true);
+
+        // Formatear fecha de YYYY-MM-DD a DD/MM/YYYY
+        let fechaFormateada = cita.fecha;
+        if (cita.fecha.includes('-')) {
+            const [anio, mes, dia] = cita.fecha.split('-');
+            fechaFormateada = `${dia}/${mes}/${anio}`;
+        }
+
+        let bodyMensaje = '';
+
+        if (cita.estado === 'Pospuesta') {
+            // MENSAJE DINÁMICO PARA CITAS POSPUESTAS
+            bodyMensaje = `🐾 *La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Te informamos que la cita de tu mascota *${cita.mascota}* para el servicio de *${cita.servicio}* ha sido reprogramada con éxito.\n\n *Su cita es el día:* ${fechaFormateada}\n *A la hora:* ${cita.hora}\n\n¡Te esperamos en este nuevo horario!`;
+        } else {
+            // MENSAJE DINÁMICO PARA CITAS NUEVAS (PENDIENTES)
+            bodyMensaje = `🐾 *La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Queremos confirmarte que la cita para tu mascota *${cita.mascota}* ha sido programada de manera exitosa.\n\n*Su cita es el día:* ${fechaFormateada}\n*A la hora:* ${cita.hora}\n\n¡Te esperamos!`;
+        }
+
+        // Enviamos primero la plantilla de control de Meta requerida
         const payloadPlantilla = {
             messaging_product: "whatsapp",
             to: TELEFONO_DESTINO,
@@ -36,24 +55,34 @@ const EstadoCita = ({ cita, alCambiarEstado }) => {
             template: { name: "hello_world", language: { code: "en_US" } }
         };
 
-        const payloadTextoEspanol = {
+        const payloadTexto = {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             to: TELEFONO_DESTINO,
             type: "text",
-            text: { 
-                preview_url: false,
-                body: `🐾 ¡Hola ${cita.dueno}! Te saluda La Casa del Perro. Queremos confirmarte que la cita para tu mascota ${cita.mascota} ha sido programada exitosamente. ¡Te esperamos!` 
-            }
+            text: { preview_url: false, body: bodyMensaje }
         };
 
         const exitoPlantilla = await enviarWhatsAppMeta(payloadPlantilla);
         if (exitoPlantilla) {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            const exitoTexto = await enviarWhatsAppMeta(payloadTextoEspanol);
+            const exitoTexto = await enviarWhatsAppMeta(payloadTexto);
+            
             if (exitoTexto) {
-                alert(`¡Cita Notificada exitosamente en español!`);
-                setCitaAgendadaNotificada(true);
+                alert(`¡Cliente notificado por WhatsApp con el formato: "el día ${fechaFormateada} a la hora ${cita.hora}"!`);
+                
+                // Guardamos en IndexedDB que esta cita ya fue notificada para cambiar el botón
+                try {
+                    const db = await configurarBD();
+                    if (cita.estado === 'Pospuesta') {
+                        await db.put("agenda", { ...cita, notificadaComoPospuesta: true });
+                    } else {
+                        await db.put("agenda", { ...cita, notificadaComoNueva: true });
+                    }
+                    await cargarCitas(); // Refrescamos la vista
+                } catch (e) {
+                    console.error(e);
+                }
             }
         } else {
             alert(`Hubo un problema con los servidores de Meta o el Token.`);
@@ -62,14 +91,17 @@ const EstadoCita = ({ cita, alCambiarEstado }) => {
     };
 
     const handleAccionEstado = async (nuevoEstado) => {
+        if (nuevoEstado === 'Pospuesta') {
+            alCambiarEstado(cita.id, 'Pospuesta');
+            return;
+        }
+
         setProcesando(true);
         let mensajeTexto = '';
         if (nuevoEstado === 'Completada') {
-            mensajeTexto = `🐾 ¡Hola ${cita.dueno}! Tu mascota ${cita.mascota} ha terminado su atención de "${cita.servicio}" en La Casa del Perro. ¡Está listo para ser recogido! Total a pagar: $${cita.precio ? cita.precio.toFixed(2) : '0.00'}. ¡Gracias por su preferencia!`;
-        } else if (nuevoEstado === 'Pospuesta') {
-            mensajeTexto = `¡Hola ${cita.dueno}! Te informamos que la cita de ${cita.mascota} ha sido pospuesta por inconvenientes de agenda. Nos comunicaremos pronto para reprogramar el horario.`;
+            mensajeTexto = `🐾 ¡Hola ${cita.dueno}! Tu mascota ${cita.mascota} ha terminado su atención de "${cita.servicio}". ¡Está listo para ser recogido! Total: $${cita.precio.toFixed(2)}.`;
         } else if (nuevoEstado === 'Cancelada') {
-            mensajeTexto = `¡Hola ${cita.dueno}! Te confirmamos que la cita para ${cita.mascota} ha sido cancelada exitosamente en nuestro sistema.`;
+            mensajeTexto = `¡Hola ${cita.dueno}! Te confirmamos que la cita para ${cita.mascota} ha sido cancelada exitosamente.`;
         }
 
         const payloadTexto = {
@@ -89,55 +121,30 @@ const EstadoCita = ({ cita, alCambiarEstado }) => {
     };
 
     if (cita.estado === 'Completada' || cita.estado === 'Cancelada') {
-        return (
-            <span className="badge secondary text-muted fs-0-75">Atención Finalizada</span>
-        );
+        return <span className="badge secondary text-muted fs-0-75">Atención Finalizada</span>;
     }
 
-      return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-      
-      {/* PASO 1: Notificación inicial usando tus clases .btn-primary y .btn-block */}
-      {!citaAgendadaNotificada ? (
-        <button
-          onClick={handleNotificarAgendada}
-          disabled={procesando}
-          className="btn-primary btn-block"
-        >
-           1. Notificar Cita Agendada
-        </button>
-      ) : (
-        <span style={{ color: '#6E8F6B', fontSize: '12px', fontWeight: 'bold' }}>✓ Cliente Notificado del Registro</span>
-      )}
+    // Determinar si ya se mandó la notificación según el estado actual
+    const yaNotificado = cita.estado === 'Pospuesta' ? cita.notificadaComoPospuesta : cita.notificadaComoNueva;
 
-      {/* PASO 2: Botones usando tus clases exactas de CSS .btn-success, .btn-warning y .btn-danger */}
-      <div style={{ display: 'flex', gap: '5px' }}>
-        <button 
-          onClick={() => handleAccionEstado('Completada')} 
-          disabled={procesando || !citaAgendadaNotificada}
-          className="btn-success"
-        >
-          Completar
-        </button>
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          
+          {!yaNotificado ? (
+            <button onClick={handleNotificarWhatsApp} disabled={procesando} className="btn-primary btn-block">
+               {cita.estado === 'Pospuesta' ? '1. Notificar Cita Reprogramada' : '1. Notificar Cita Agendada'}
+            </button>
+          ) : (
+            <span style={{ color: '#6E8F6B', fontSize: '12px', fontWeight: 'bold' }}>✓ Cliente Notificado</span>
+          )}
 
-        <button 
-          onClick={() => handleAccionEstado('Pospuesta')} 
-          disabled={procesando || !citaAgendadaNotificada}
-          className="btn-warning"
-        >
-          Posponer
-        </button>
-
-        <button 
-          onClick={() => handleAccionEstado('Cancelada')} 
-          disabled={procesando || !citaAgendadaNotificada}
-          className="btn-danger"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  );
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <button onClick={() => handleAccionEstado('Completada')} disabled={procesando} className="btn-success">Completar</button>
+            <button onClick={() => handleAccionEstado('Pospuesta')} disabled={procesando} className="btn-warning">Posponer</button>
+            <button onClick={() => handleAccionEstado('Cancelada')} disabled={procesando} className="btn-danger">Cancelar</button>
+          </div>
+        </div>
+    );
 };
 
 export default EstadoCita;

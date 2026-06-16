@@ -22,12 +22,11 @@ export const configurarBD = async () => {
           keyPath: "id",
           autoIncrement: true,
         });
+        
       if (!db.objectStoreNames.contains("agenda"))
         db.createObjectStore("agenda", { keyPath: "id", autoIncrement: true });
 
-
-
-     // Inicializar almacén de Productos de Inventario ──
+      // Inicializar almacén de Productos de Inventario ──
       if (!db.objectStoreNames.contains("inventario")) {
         const storeInven = db.createObjectStore("inventario", {
           keyPath: "id",
@@ -49,8 +48,6 @@ export const configurarBD = async () => {
         storeLotes.add({ id: 3, loteId: "LOTE-101", ingreso: "2026-03-01", cantidad: 4, productoNombre: "Desparasitante Oral" });
         storeLotes.add({ id: 4, loteId: "LOTE-201", ingreso: "2026-02-20", cantidad: 15, productoNombre: "Antibiótico Amoxicilina" });
       }
-
-
 
       if (!db.objectStoreNames.contains("consultas"))
         db.createObjectStore("consultas", {
@@ -87,6 +84,11 @@ export const buscarPaciente = async (id) => {
   return db.get("pacientes", id);
 };
 
+export const registrarPaciente = async (paciente) => {
+  const db = await configurarBD();
+  return db.add("pacientes", paciente);
+};
+
 export const actualizarPaciente = async (paciente) => {
   const db = await configurarBD();
   return db.put("pacientes", paciente);
@@ -119,4 +121,33 @@ export const actualizarLoteDB = async (lote) => {
 export const eliminarLoteDB = async (id) => {
   const db = await configurarBD();
   return db.delete("lotes_peps", id);
+};
+
+
+// ============================================================================
+// NUEVAS FUNCIONES DE ENLACE: CONSULTAS Y AGENDA
+// ============================================================================
+export const guardarCitaAgenda = async (cita) => {
+  const db = await configurarBD();
+  return db.add("agenda", cita);
+};
+
+export const actualizarCitaAgenda = async (cita) => {
+  const db = await configurarBD();
+  return db.put("agenda", cita);
+};
+
+export const obtenerCitasAgenda = async () => {
+  const db = await configurarBD();
+  return db.getAll("agenda");
+};
+
+export const guardarConsultaHistorial = async (consulta) => {
+  const db = await configurarBD();
+  return db.add("consultas", consulta);
+};
+
+export const obtenerConsultasHistorial = async () => {
+  const db = await configurarBD();
+  return db.getAll("consultas");
 };
