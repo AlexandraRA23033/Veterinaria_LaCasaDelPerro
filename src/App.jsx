@@ -15,8 +15,8 @@ import Login from "./componentes/autenticacion/Login";
 import Registro from "./componentes/autenticacion/Registro";
 import DashboardAdmin from "./componentes/panel-control/DashboardAdmin";
 import Gestion from "./componentes/panel-control/Gestion";
-import FormularioExpediente from "./componentes/mascotas/formularioExpediente"; // ← import correcto
-import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // ← import correcto
+import FormularioExpediente from "./componentes/mascotas/formularioExpediente";
+import FormularioMascotas from "./componentes/mascotas/formularioMascotas";
 import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
@@ -129,7 +129,6 @@ function AppContent() {
         />
       )}
 
-      {/* ── LAYOUT ── */}
       <div className={mostrarSidebar ? "main-wrapper has-navbar" : ""}>
         {mostrarSidebar && (
           <>
@@ -271,7 +270,6 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
->>>>>>> c7b79842df097fd6ffe9c6d708714e0a8512c3f7
             {/* Usuario */}
             <Route
               path="/expedientes"
