@@ -7,7 +7,7 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ← MIS PARTES: Se agregó useEffect
 import "./main.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import RutaProtegida from "./componentes/autenticacion/RutaProtegida";
@@ -24,15 +24,38 @@ import VerMascotas from "./componentes/mascotas/VerMascotas";
 import VerExpedienteMascota from "./componentes/mascotas/VerExpedienteMascota";
 import EditarExpediente from "./componentes/mascotas/editarMascota";
 
-
-
+// ── MIS PARTES: Importaciones para Inventario y Catálogo de Servicios ──
+import TablaInventario from "./componentes/inventario/TablaInventario";
+import AlertaStock from "./componentes/inventario/AlertaStock";
+import TablaServicios from "./componentes/inventario/TablaServicios";
+import { obtenerProductosDB, obtenerLotesDB } from "./base-datos/configuracion";
+// ───────────────────────────────────────────────────────────────────────
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navbarActive, setNavbarActive] = useState(false);
   const { usuario, logout } = useAuth();
 
+  // ── MIS PARTES: Estados de control para el módulo de Inventario PEPS ──
+  const [productos, setProductos] = useState([]);
+  const [lotes, setLotes] = useState([]);
 
+  useEffect(() => {
+    async function cargarInventarioBD() {
+      try {
+        const prodsBD = await obtenerProductosDB();
+        const lotesBD = await obtenerLotesDB();
+        setProductos(prodsBD);
+        setLotes(lotesBD);
+      } catch (error) {
+        console.error("Error cargando inventario en App.jsx:", error);
+      }
+    }
+    if (usuario) {
+      cargarInventarioBD();
+    }
+  }, [usuario]);
+  // ───────────────────────────────────────────────────────────────────────
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -180,6 +203,19 @@ function AppContent() {
                         Inventario
                       </a>
                     </li>
+                    {/* ── MIS PARTES: Enlace para acceder a la Tabla de Servicios en el menú lateral ── */}
+                    <li>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goTo("/Dashboard-admin/servicios");
+                        }}
+                      >
+                        Servicios Veterinarios
+                      </a>
+                    </li>
+                    {/* ────────────────────────────────────────────────────────────────────────────── */}
                   </>
                 ) : (
                   <>
@@ -269,16 +305,38 @@ function AppContent() {
               <RutaProtegida rolRequerido="admin"><EditarExpediente />
               </RutaProtegida>
             }/>
+            
+            {/* ── MIS PARTES: Vista de Inventario Inteligente vinculada a tus tablas y lógica PEPS ── */}
             <Route
-              path="//Dashboard-admin/inventario"
+              path="/Dashboard-admin/inventario"
               element={
                 <RutaProtegida rolRequerido="admin">
-                  <div className="container mt-3">
-                    <h1>Inventario</h1>
+                  <div className="container mt-2">
+                    <header className="mb-2">
+                      <h2 className="fs-2 fw-bold text-primary">Panel de Inventario Inteligente</h2>
+                      <p className="text-muted">Validación de Almacén Médica y Lotes Críticos</p>
+                    </header>
+                    <AlertaStock productos={productos} lotes={lotes} />
+                    <TablaInventario productos={productos} lotes={lotes} />
                   </div>
                 </RutaProtegida>
               }
             />
+            {/* ───────────────────────────────────────────────────────────────────────────────────── */}
+
+            {/* ── MIS PARTES: Vista de Catálogo de Servicios Clínicos Veterinarios ── */}
+            <Route
+              path="/Dashboard-admin/servicios"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <div className="container mt-2">
+                    <TablaServicios />
+                  </div>
+                </RutaProtegida>
+              }
+            />
+            {/* ────────────────────────────────────────────────────────────────────── */}
+
             {/* Usuario */}
             <Route
               path="/expedientes"
