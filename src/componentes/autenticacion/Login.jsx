@@ -9,6 +9,7 @@ const Login = () => {
   const [datos, setDatos] = useState({ correo: '', password: '' });
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [verPassword, setVerPassword] = useState(false);
 
   const handleChange = (e) => {
     setDatos({ ...datos, [e.target.name]: e.target.value });
@@ -40,15 +41,14 @@ const Login = () => {
           <div className="card shadow-sm br-3 overflow-hidden">
             <div className="row">
               <div className="col-md-6 bg-accent d-flex f-colum align-item j-cont-cent text-center p-3">
-                <span className="fs-1">🐾</span>
+                <img src="/huellas-de-perro.png" alt="Huellas de perro" className="mb-2" />
                 <h2 className="text-light fw-bold mt-3 mb-2">La Casa del Perro</h2>
-                <div className="badge badge-pildora bg-warning text-dark mt-2 mb-2"> Clínica Veterinaria</div>
+                <div className="badge badge-pildora bg-warning text-dark mt-2 mb-2">Clínica Veterinaria</div>
                 <p className="text-light">
                   Salud y bienestar para tus mascotas. Inicia sesión para gestionar tus citas.
                 </p>
               </div>
 
-              {/* Panel derecho: formulario con acentos rosa */}
               <div className="col-md-6 p-3">
                 <header>
                   <h2 className="text-primary fs-2 mb-1">Iniciar sesión</h2>
@@ -78,16 +78,25 @@ const Login = () => {
 
                   <div className="form-group">
                     <label className="label" htmlFor="password-login">Contraseña</label>
-                    <input
-                      type="password"
-                      id="password-login"
-                      name="password"
-                      className="input"
-                      placeholder="••••••••"
-                      onChange={handleChange}
-                      required
-                      autoComplete="current-password"
-                    />
+                    <div className="d-flex gap-1 align-item">
+                      <input
+                        type={verPassword ? 'text' : 'password'}
+                        id="password-login"
+                        name="password"
+                        className="input"
+                        placeholder="••••••••"
+                        onChange={handleChange}
+                        required
+                        autoComplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        className="btn-outline-secondary btn-sm"
+                        onClick={() => setVerPassword(!verPassword)}
+                      >
+                        {verPassword ? 'Ocultar' : 'Mostrar'}
+                      </button>
+                    </div>
                   </div>
 
                   <button
