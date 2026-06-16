@@ -257,10 +257,7 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
-<<<<<<< HEAD
-            
 
-=======
             <Route path="/mascotas/ver" element={
               <RutaProtegida rolRequerido="admin"><VerMascotas />
               </RutaProtegida>
@@ -283,7 +280,6 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
->>>>>>> c7b79842df097fd6ffe9c6d708714e0a8512c3f7
             {/* Usuario */}
             <Route
               path="/expedientes"

@@ -1,90 +1,101 @@
-import {useState} from 'react';
+import { useEffect, useState } from "react";
 import EstadoCita from './EstadoCita';
 
 const ListaCitas = ({ citas, alCambiarEstado }) => {
   
-  // Mapeamos los estados directamente a las clases de alertas/badges de tu framework CSS
+  // Mapeamos los estados directamente a las clases semánticas de badges de tu framework CSS
   const obtenerClaseEstado = (estado) => {
     switch (estado) {
-      case 'Pendiente': return 'form-text error';   // Tus tonos de alerta base
-      case 'Pospuesta': return 'form-text';         // Tono muted/neutral de tu CSS
-      case 'Completada': return 'form-text success'; // Tu verde #6E8F6B
-      case 'Cancelada': return 'form-text error';    // Tu rojo #E85C5C
-      default: return 'form-text';
+      case 'Pendiente': return 'badge info';        // Azul / Información
+      case 'Pospuesta': return 'badge warning';     // Amarillo / Advertencia
+      case 'Completada': return 'badge success';    // Verde / Éxito (#6E8F6B)
+      case 'Cancelada': return 'badge danger';      // Rojo / Error (#E85C5C)
+      default: return 'badge secondary';
     }
   };
 
   return (
-    // Reemplazamos el contenedor inline por tu clase estructurada ".card"
-    <div className="card">
-      <div className="card-header">
-        📋 Panel de Gestión de Citas (Administrador)
+    <div className="mt-3">
+      {/* Cabecera del Listado Administrativo */}
+      <div className="d-flex j-cont-bet align-item mb-1">
+        <div>
+          <h3 className="fs-1-5 fw-bold text-primary">📋 Panel de Gestión de Citas</h3>
+          <p className="text-muted">
+            {citas.length} registro{citas.length !== 1 ? "s" : ""} en el sistema de reservas
+          </p>
+        </div>
       </div>
 
-      <div className="card-body">
-        {citas.length === 0 ? (
-          <p className="form-text" style={{ textAlign: 'center', padding: '20px 0' }}>
-            No hay ninguna cita registrada en el sistema de reservas.
-          </p>
-        ) : (
-          <div>
-            {/* Aplicamos tu clase nativa ".table" */}
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Mascota / Dueño</th>
-                  <th>Fecha / Hora</th>
-                  <th>Servicio Solicitado</th>
-                  <th>Motivo / Costo</th>
-                  <th>Estado</th>
-                  <th style={{ textAlign: 'center' }}>Acciones de Control</th>
+      {citas.length === 0 ? (
+        <div className="alerta primary text-center">
+          No hay ninguna cita registrada en el sistema de reservas.
+        </div>
+      ) : (
+        // Contenedor estandarizado con sombras y bordes redondeados de tu librería
+        <div className="table-container shadow-sm br-1">
+          <table className="table table-clara-primary table-bordered">
+            <thead>
+              <tr>
+                <th>Mascota / Dueño</th>
+                <th>Fecha / Hora</th>
+                <th>Servicio Solicitado</th>
+                <th>Motivo / Costo</th>
+                <th>Estado</th>
+                <th style={{ textAlign: 'center' }}>Acciones de Control</th>
+              </tr>
+            </thead>
+            <tbody>
+              {citas.map((cita) => (
+                <tr key={cita.id}>
+                  {/* Datos del Paciente y Propietario */}
+                  <td>
+                    <strong className="text-primary">🐾 {cita.mascota}</strong>
+                    <br />
+                    <span className="text-muted fs-0-85">Dueño: {cita.dueno}</span>
+                  </td>
+
+                  {/* Programación de Tiempos */}
+                  <td>
+                    <div>📅 {cita.fecha}</div>
+                    <span className="fw-bold text-accent">⏰ {cita.hora}</span>
+                  </td>
+
+                  {/* Servicio de la Clínica */}
+                  <td>
+                    <span className="fw-bold" style={{ color: 'var(--text-dark, #2F332B)' }}>
+                      {cita.servicio}
+                    </span>
+                  </td>
+
+                  {/* Costos e Insumos con el verde exacto de tu paleta */}
+                  <td>
+                    <span 
+                      style={{ display: 'block', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} 
+                      title={cita.motivo}
+                      className="text-muted fs-0-85 italic"
+                    >
+                      {cita.motivo}
+                    </span>
+                    <strong style={{ color: '#6E8F6B' }}>${cita.precio.toFixed(2)}</strong>
+                  </td>
+
+                  {/* Badge de Estado Dinámico */}
+                  <td>
+                    <span className={obtenerClaseEstado(cita.estado)}>
+                      {cita.estado}
+                    </span>
+                  </td>
+
+                  {/* Panel de Inyección de la API de Meta */}
+                  <td>
+                    <EstadoCita cita={cita} alCambiarEstado={alCambiarEstado} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {citas.map((cita) => (
-                  <tr key={cita.id}>
-                    <td>
-                      {/* Eliminamos el azul #007bff de Bootstrap y dejamos que herede tu color de fuente */}
-                      <strong>{cita.mascota}</strong> <br />
-                      <span className="form-text">Dueño: {cita.dueno}</span>
-                    </td>
-                    <td>
-                      <span>📅 {cita.fecha}</span> <br />
-                      <span className="form-text">{cita.hora}</span>
-                    </td>
-                    <td>
-                      {/* Usamos una estructura limpia para resaltar el servicio */}
-                      <span style={{ fontWeight: '500' }}>
-                        {cita.servicio}
-                      </span>
-                    </td>
-                    <td>
-                      <span 
-                        style={{ display: 'block', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} 
-                        title={cita.motivo}
-                      >
-                        {cita.motivo}
-                      </span>
-                      {/* Cambiamos el verde Bootstrap por tu tono primario o de éxito */}
-                      <strong style={{ color: '#6E8F6B' }}>${cita.precio.toFixed(2)}</strong>
-                    </td>
-                    <td>
-                      {/* Renderizado dinámico con tus clases de validación automatizada */}
-                      <span className={obtenerClaseEstado(cita.estado)} style={{ fontWeight: 'bold' }}>
-                        {cita.estado}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {/* Inyección del componente de botones de estado */}
-                      <EstadoCita cita={cita} alCambiarEstado={alCambiarEstado} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
