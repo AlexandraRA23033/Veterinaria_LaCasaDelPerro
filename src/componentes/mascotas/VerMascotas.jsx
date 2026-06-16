@@ -59,7 +59,7 @@ export default function VerMascotas() {
         titulo="Gestión Mascotas"
         subtitulo="Gestiona las mascotas registradas para este usuario"
         colorTitulo="text-primary"
-        onVolver={() => navigate("/gestion")}
+        onVolver={() => navigate("/Dashboard-admin/gestion")}
       />
 
       <TarjetaDueno
@@ -123,7 +123,6 @@ export default function VerMascotas() {
                     </td>
                     <td>
                       <div className="d-flex gap-1 f-wrap">
-                        {/* → /mascotas/expediente  (solo lectura) */}
                         <button
                           className="btn-success btn-sm"
                           onClick={() => navigate("/mascotas/expediente", {
