@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { obtenerStockTotal } from './LogicaPEPS';
 
 const TablaInventario = ({ productos, lotes }) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { obtenerStockTotal } from './LogicaPEPS';
 
 const AlertaStock = ({ productos, lotes }) => {
@@ -19,7 +19,7 @@ const AlertaStock = ({ productos, lotes }) => {
     <div className="danger alerta" style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
       <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>
-          <strong>⚠️ ALERTA DE REABASTECIMIENTO:</strong> Se han detectado productos con existencias críticas en el almacén médico (≤ 5 unidades).
+          <strong>ALERTA DE REABASTECIMIENTO:</strong> Se han detectado productos con existencias críticas en el almacén médico (≤ 5 unidades).
         </span>
         <button 
           onClick={() => setVisible(false)} 
