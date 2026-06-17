@@ -1,12 +1,53 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import { obtenerPacientes } from '../../base-datos/configuracion';
 
 const Estadisticas = () =>{
 
-    const [kpis]= useState([
-        {id:1, titulo: 'Mascotas Activas', cifra: '50', color: 'success', texto: 'Pacientes registrados'},
+    // const [kpis]= useState([
+    //     {id:1, titulo: 'Mascotas Activas', cifra: '50', color: 'success', texto: 'Pacientes registrados'},
+    //     {id:2, titulo: 'Citas para Hoy', cifra: '18', color: 'warning', texto: '8 pendientes'},
+    //     {id:3, titulo: 'Stock Crítico', cifra: '4', color: 'danger', texto: 'Productos por agotarse'},
+    // ]);
+
+    //Estados individuales para manejar la data real de IndexedDB
+    const [totalMascotas, setTotalMascotas] = useState(0);
+    const [cargando, setCargando] = useState(true);
+    useEffect(() =>{
+
+        let componenteMontado = true;
+        async function calcularEstadisticas() {
+
+            try{
+                setCargando(true);
+                
+                const todasLasMascotas = await obtenerPacientes();
+                if(componenteMontado){
+                    if(Array.isArray(todasLasMascotas)){
+                        setTotalMascotas(todasLasMascotas.length);
+                    }else{
+                        setTotalMascotas(0);
+                    }
+                }
+            }catch(err){
+                console.err("Error al obtener estadisticas de IndexedDB:", err);
+            }finally{
+                if(componenteMontado){
+                    setCargando(false);
+                }
+                
+            }
+        }
+        calcularEstadisticas();
+        return ()=>{
+            componenteMontado = false;
+        }
+    }, []);
+
+    const kpis= [
+        {id:1, titulo: 'Mascotas Registradas', cifra: cargando ? '...': String(totalMascotas), color: 'success', texto: 'Pacientes registrados'},
         {id:2, titulo: 'Citas para Hoy', cifra: '18', color: 'warning', texto: '8 pendientes'},
         {id:3, titulo: 'Stock Crítico', cifra: '4', color: 'danger', texto: 'Productos por agotarse'},
-    ]);
+    ];
 
     return(
         <div className='container mt-2'>
@@ -17,7 +58,7 @@ const Estadisticas = () =>{
                         <div className='card br-3 p-2 overflow-hidden'>
                             <span className={`badge ${kpi.color} mb-1`}>{kpi.titulo}</span>
                             <h3 className='fs-2 text-accent fw-bold mb-1'>{kpi.cifra}</h3>
-                            <p className='text-muted fs-small'>{kpi.texto}</p>
+                            <p className='text-muted fs-3'>{kpi.texto}</p>
                         </div>
                     </div>
                 ))}
