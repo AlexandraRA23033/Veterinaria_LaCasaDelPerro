@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registrarUsuario, buscarUsuario } from '../../base-datos/configuracion';
-
-// Función que evalúa la seguridad de la contraseña
+import { crearUsuario } from '../usuarios/usuariosService';
+// Función que evalúa la seguridad de la contraseña (Luego investigo como quitar el error de la tipografia)
 const evaluarPassword = (password) => {
   if (!password) return null;
-
-  let puntos = 0;
   const criterios = {
     longitud: password.length >= 8,
     mayuscula: /[A-Z]/.test(password),
     numero: /[0-9]/.test(password),
-    especial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    especial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
   };
 
-  puntos = Object.values(criterios).filter(Boolean).length;
+  const puntos = Object.values(criterios).filter(Boolean).length;
 
   if (password.length < 6) return { nivel: 'invalida', texto: 'Muy corta — mínimo 6 caracteres', clase: 'danger' };
   if (puntos <= 1)         return { nivel: 'baja',     texto: 'Seguridad baja',   clase: 'danger'  };
@@ -50,8 +47,8 @@ const Registro = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!datos.correo.endsWith('@ues.edu.sv') && !datos.correo.endsWith('.com')) {
-      setError('Solo se permiten correos @ues.edu.sv o .com');
+    if (!datos.correo.endsWith('@.sv') && !datos.correo.endsWith('.com')) {
+      setError('Solo se permiten correos @sv o .com');
       return;
     }
     if (datos.password.length < 6) {
@@ -60,14 +57,11 @@ const Registro = () => {
     }
     setCargando(true);
     try {
-      const existente = await buscarUsuario(datos.correo);
-      if (existente) { setError('Este correo ya está registrado.'); return; }
-      await registrarUsuario(datos);
+      await crearUsuario(datos);
       setExito(true);
-      setTimeout(() => navigate('/ingresar'), 2000);
+      setTimeout(() =>  navigate('/ingresar'), 2000);
     } catch (err) {
-      console.error(err);
-      setError('Error de conexión con la base de datos.');
+      setError(err.message);
     } finally {
       setCargando(false);
     }
@@ -177,7 +171,7 @@ const Registro = () => {
                         {!/[0-9]/.test(datos.password) && (
                           <span className="warning badge mb-1">+ Número</span>
                         )}
-                        {!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(datos.password) && (
+                        {!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(datos.password) && (
                           <span className="warning badge mb-1 ">+ Símbolo (!@#...)</span>
                         )}
                       </div>
