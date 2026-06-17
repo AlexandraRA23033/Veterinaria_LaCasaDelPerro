@@ -165,21 +165,20 @@ const Registro = () => {
                       </aside>
                     )}
 
-                    {/* Criterios de mejora — solo si la seguridad no es fuerte */}
                     {seguridad && seguridad.nivel !== 'fuerte' && datos.password.length >= 6 && (
                       <div className="mt-1">
                         <p className="text-muted fs-small mb-1">Para mejorar tu contraseña agrega:</p>
                         {datos.password.length < 8 && (
-                          <span className="warning badge mb-1 mr-1">+ 8 caracteres</span>
+                          <span className="warning badge mb-1">+ 8 caracteres</span>
                         )}
                         {!/[A-Z]/.test(datos.password) && (
-                          <span className="warning badge mb-1 mr-1">+ Mayúscula</span>
+                          <span className="warning badge mb-1">+ Mayúscula</span>
                         )}
                         {!/[0-9]/.test(datos.password) && (
-                          <span className="warning badge mb-1 mr-1">+ Número</span>
+                          <span className="warning badge mb-1">+ Número</span>
                         )}
                         {!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(datos.password) && (
-                          <span className="warning badge mb-1 mr-1">+ Símbolo (!@#...)</span>
+                          <span className="warning badge mb-1 ">+ Símbolo (!@#...)</span>
                         )}
                       </div>
                     )}

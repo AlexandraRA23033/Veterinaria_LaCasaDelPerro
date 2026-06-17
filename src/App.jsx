@@ -7,16 +7,18 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./main.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import RutaProtegida from "./componentes/autenticacion/RutaProtegida";
 import Login from "./componentes/autenticacion/Login";
 import Registro from "./componentes/autenticacion/Registro";
+import VerUsuario from "./componentes/usuarios/VerUsuarios";
+import EditarUsuario from "./componentes/usuarios/EditarUsuarios";
 import DashboardAdmin from "./componentes/panel-control/DashboardAdmin";
 import Gestion from "./componentes/panel-control/Gestion";
-import FormularioExpediente from "./componentes/mascotas/formularioExpediente"; // ← import correcto
-import FormularioMascotas from "./componentes/mascotas/formularioMascotas"; // ← import correcto
+import FormularioExpediente from "./componentes/mascotas/formularioExpediente";
+import FormularioMascotas from "./componentes/mascotas/formularioMascotas";
 import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
@@ -24,7 +26,10 @@ import VerMascotas from "./componentes/mascotas/VerMascotas";
 import VerExpedienteMascota from "./componentes/mascotas/VerExpedienteMascota";
 import EditarExpediente from "./componentes/mascotas/editarMascota";
 
-
+import TablaInventario from "./componentes/inventario/TablaInventario";
+import AlertaStock from "./componentes/inventario/AlertaStock";
+import TablaServicios from "./componentes/inventario/TablaServicios";
+import { obtenerProductosDB, obtenerLotesDB } from "./base-datos/configuracion";
 
 
 function AppContent() {
@@ -32,7 +37,24 @@ function AppContent() {
   const [navbarActive, setNavbarActive] = useState(false);
   const { usuario, logout } = useAuth();
 
+  const [productos, setProductos] = useState([]);
+  const [lotes, setLotes] = useState([]);
 
+  useEffect(() => {
+    async function cargarInventarioBD() {
+      try {
+        const prodsBD = await obtenerProductosDB();
+        const lotesBD = await obtenerLotesDB();
+        setProductos(prodsBD);
+        setLotes(lotesBD);
+      } catch (error) {
+        console.error("Error cargando inventario en App.jsx:", error);
+      }
+    }
+    if (usuario) {
+      cargarInventarioBD();
+    }
+  }, [usuario]);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +77,6 @@ function AppContent() {
 
   return (
     <>
-      {/* ── NAVBAR ── */}
       <nav className="navbar--dark">
         <h3
           className="nav-brand text-light"
@@ -128,12 +149,11 @@ function AppContent() {
       </nav>
       {mostrarSidebar && (
         <div
-          className={`sidebar-overlay ${sidebarOpen ? "is-active" : ""}`}
+          className={`sidebar-overlay ${sidebarOpen}`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* ── LAYOUT ── */}
       <div className={mostrarSidebar ? "main-wrapper has-navbar" : ""}>
         {mostrarSidebar && (
           <>
@@ -180,6 +200,17 @@ function AppContent() {
                         Inventario
                       </a>
                     </li>
+                    <li>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goTo("/Dashboard-admin/servicios");
+                        }}
+                      >
+                        Servicios Veterinarios
+                      </a>
+                    </li>
                   </>
                 ) : (
                   <>
@@ -224,7 +255,6 @@ function AppContent() {
             <Route path="/" element={<Inicio />} />
             <Route path="/ingresar" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
-            {/* Admin */}
             <Route
               path="/dashboard-admin"
               element={
@@ -257,7 +287,6 @@ function AppContent() {
                 </RutaProtegida>
               }
             />
-
             <Route path="/mascotas/ver" element={
               <RutaProtegida rolRequerido="admin"><VerMascotas />
               </RutaProtegida>
@@ -270,17 +299,32 @@ function AppContent() {
               <RutaProtegida rolRequerido="admin"><EditarExpediente />
               </RutaProtegida>
             }/>
+            
             <Route
-              path="//Dashboard-admin/inventario"
+              path="/Dashboard-admin/inventario"
               element={
                 <RutaProtegida rolRequerido="admin">
-                  <div className="container mt-3">
-                    <h1>Inventario</h1>
+                  <div className="container mt-2">
+                    <header className="mb-2">
+                      <h2 className="fs-2 fw-bold text-primary">Panel de Inventario Inteligente</h2>
+                      <p className="text-muted">Validación de Almacén Médica y Lotes Críticos</p>
+                    </header>
+                    <AlertaStock productos={productos} lotes={lotes} />
+                    <TablaInventario productos={productos} lotes={lotes} />
                   </div>
                 </RutaProtegida>
               }
             />
-            {/* Usuario */}
+            <Route
+              path="/Dashboard-admin/servicios"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <div className="container mt-2">
+                    <TablaServicios />
+                  </div>
+                </RutaProtegida>
+              }
+            />
             <Route
               path="/expedientes"
               element={
@@ -295,7 +339,23 @@ function AppContent() {
               path="/citas"
               element={
                 <RutaProtegida rolRequerido="admin">
-                  <AgendarCita/>
+                  <AgendarCita />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/usuarios/ver"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <VerUsuario />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/usuarios/editar"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <EditarUsuario />
                 </RutaProtegida>
               }
             />
