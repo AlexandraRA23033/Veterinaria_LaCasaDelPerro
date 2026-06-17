@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { buscarUsuario } from '../../base-datos/configuracion';
 import { useAuth } from '../../context/AuthContext';
+import { loginUsuario } from '../usuarios/usuariosService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,15 +20,11 @@ const Login = () => {
     e.preventDefault();
     setCargando(true);
     try {
-      const user = await buscarUsuario(datos.correo);
-      if (user && user.password === datos.password) {
-        login(user);
-        navigate(user.rol === 'admin' ? '/dashboard-admin' : '/expedientes');
-      } else {
-        setError('Correo o contraseña incorrectos.');
-      }
-    } catch {
-      setError('Error al conectar con la base de datos.');
+      const user = await loginUsuario(datos.correo, datos.password);
+      login(user);
+      navigate(user.rol === 'admin' ? '/dashboard-admin' : '/expedientes');
+    } catch (err) {
+      setError(err.message);
     } finally {
       setCargando(false);
     }
