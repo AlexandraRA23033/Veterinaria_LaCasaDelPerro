@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { actualizarUsuario } from "../../base-datos/configuracion";
+import { useState, useEffect } from "react";
+import {  useLocation, useNavigate } from "react-router-dom";
+import { actualizarUsuario, configurarBD } from "../../base-datos/configuracion";
 import { useAuth } from "../../context/AuthContext";
 
 export default function EditarUsuario() {
     const { state }    = useLocation();
     const navigate     = useNavigate();
     const { usuario: usuarioLogueado } = useAuth();
-    const usuario      = state?.usuario;
+    const usuario      = state?.usuario || usuarioLogueado;
 
     const [datos, setDatos] = useState({
         nombre_completo: usuario?.nombre_completo || "",
@@ -18,10 +18,40 @@ export default function EditarUsuario() {
     const [error,     setError]     = useState("");
     const [exito,     setExito]     = useState(false);
 
+     //identificamis el rol de la persona que utiliza la pantalla actualmente
+    const esAdmin = usuarioLogueado?.rol === "admin";
+    const rutaRetorno = esAdmin ? "/dashboard-admin" : "/expedientes";
+
+    useEffect(() =>{
+        async function cargarDatosActualizadosDB() {
+
+            const correoActivo = usuario?.correo || usuario?.email;
+            if(!correoActivo) return;
+            try{
+                const db = await configurarBD();
+                const usuarioDB = await db.get("usuarios", correoActivo);
+                if(usuarioDB){
+                    setDatos({
+                        nombre_completo: usuarioDB.nombre_completo || "",
+                        telefono: usuarioDB.telefono || "",
+                        rol: usuarioDB.rol || "usuario"
+                    });
+                }
+            }catch(err){
+                console.error("Error al sincronizar formulario con IndexedDB:", err);
+            }
+            
+        }
+        cargarDatosActualizadosDB();
+    }, [usuario]);
+
     if (!usuario) {
-        navigate("/dashboard-admin");
+        //navigate(rutaRetorno);
+        navigate("/ingresar");
         return null;
     }
+
+   
 
     const handleChange = (e) => {
         setDatos({ ...datos, [e.target.name]: e.target.value });
@@ -36,15 +66,37 @@ export default function EditarUsuario() {
         }
         setGuardando(true);
         try {
-            await actualizarUsuario({
+
+            const correoActivo = usuario.correo || usuario.email;
+            const usuarioActualizado ={
                 ...usuario,
+                correo: correoActivo,
                 nombre_completo: datos.nombre_completo.trim(),
-                telefono:        datos.telefono.trim(),
-                // Solo guarda el rol si quien edita es admin
-                rol: usuarioLogueado.rol === "admin" ? datos.rol : usuario.rol,
-            });
+                telefono: datos.telefono.trim(),
+                rol: esAdmin ? datos.rol : (usuario.rol || "usuario"),
+
+            }; 
+            await actualizarUsuario(usuarioActualizado);
+            
+            // ({
+            //     ...usuario,
+            //     nombre_completo: datos.nombre_completo.trim(),
+            //     telefono:        datos.telefono.trim(),
+            //     // Solo guarda el rol si quien edita es admin
+            //     // rol: usuarioLogueado.rol === "admin" ? datos.rol : usuario.rol,
+            //     //Seguridad: solo guarda el rol del select si quien edita es un admin
+            //     rol: esAdmin ? datos.rol : usuario.rol,
+            // });
             setExito(true);
-            setTimeout(() => navigate("/dashboard-admin"), 1500);
+            setTimeout(() => { navigate(rutaRetorno, {
+                replace: true,
+                state: {
+                    correoUsuario: correoActivo,
+                    nombreUsuario: usuarioActualizado.nombre_completo,
+                    telefonoUsuario: usuarioActualizado.telefono
+                }
+            });
+        }, 1500);
         } catch (err) {
             console.error(err);
             setError("Error al guardar los cambios.");
@@ -58,7 +110,7 @@ export default function EditarUsuario() {
             <div className="d-flex align-item mb-3">
                 <button
                     className="btn-outline-secondary btn-sm"
-                    onClick={() => navigate("/dashboard-admin")}
+                    onClick={() => navigate(rutaRetorno)}
                 >
                     ← Volver
                 </button>
@@ -72,6 +124,11 @@ export default function EditarUsuario() {
                         {exito && (
                             <aside className="success alerta mb-3" role="alert">
                                  Cambios guardados. Redirigiendo...
+                            </aside>
+                        )}
+                        {error && (
+                            <aside className="danger alert mb-3" role="alert">
+                                 {error}
                             </aside>
                         )}
 
@@ -89,7 +146,7 @@ export default function EditarUsuario() {
                                     type="email"
                                     id="correo"
                                     className="input"
-                                    value={usuario.correo}
+                                    value={usuario.correo || usuario.email || ""}
                                     disabled
                                 />
                             </div>
@@ -171,7 +228,7 @@ export default function EditarUsuario() {
                                 <button
                                     type="button"
                                     className="btn-outline-secondary"
-                                    onClick={() => navigate("/dashboard-admin")}
+                                    onClick={() => navigate(rutaRetorno)}
                                 >
                                     Cancelar
                                 </button>
