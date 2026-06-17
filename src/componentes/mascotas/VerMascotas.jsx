@@ -11,10 +11,15 @@ const BADGE_ESPECIE = {
   ave: "primary", reptil: "secondary", otro: "secondary",
 };
 
-export default function VerMascotas() {
+//añadimos la prop esAdmin con valor por defecto true
+export default function VerMascotas({esAdmin = true}) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { correoUsuario, nombreUsuario, telefonoUsuario } = location.state ?? {};
+  const datosRuta = location.state ?? {};
+
+  const correoUsuario = datosRuta.correoUsuario;
+  const nombreUsuario = datosRuta.nombreUsuario;
+  const telefonoUsuario = datosRuta.telefonoUsuario;
 
   const [mascotas,    setMascotas]    = useState([]);
   const [cargando,    setCargando]    = useState(true);
@@ -23,6 +28,7 @@ export default function VerMascotas() {
 
   useEffect(() => {
     async function cargarMascotas() {
+        if(!correoUsuario) return;
       setCargando(true);
       try {
         const db    = await configurarBD();
@@ -55,13 +61,16 @@ export default function VerMascotas() {
 
   return (
     <div className="container mt-3 mb-3">
-      <PageHeader
-        titulo="Gestión Mascotas"
-        subtitulo="Gestiona las mascotas registradas para este usuario"
-        colorTitulo="text-primary"
-        onVolver={() => navigate("/Dashboard-admin/gestion")}
-      />
+        {esAdmin && (
+            <PageHeader
+            titulo="Gestión Mascotas"
+            subtitulo="Gestiona las mascotas registradas para este usuario"
+            colorTitulo="text-primary"
+            onVolver={() => navigate("/gestion")}
+            />
 
+        )}
+      
       <TarjetaDueno
         nombreUsuario={nombreUsuario}
         correoUsuario={correoUsuario}
@@ -123,6 +132,7 @@ export default function VerMascotas() {
                     </td>
                     <td>
                       <div className="d-flex gap-1 f-wrap">
+                        {/* → /mascotas/expediente  (solo lectura) */}
                         <button
                           className="btn-success btn-sm"
                           onClick={() => navigate("/mascotas/expediente", {
@@ -148,15 +158,17 @@ export default function VerMascotas() {
                         >
                           Eliminar
                         </button>
-
-                        <button
-                          className="btn-outline-secondary btn-sm"
-                          onClick={() => navigate("/citas", {
-                            state: { mascota: m, ...state },
-                          })}
-                        >
-                          Cita
-                        </button>
+                          {/**solo el admin puede agendar citas en el calendario global */}
+                          {esAdmin && (
+                            <button
+                                className="btn-outline-secondary btn-sm"
+                                onClick={() => navigate("/mascotas/cita", {
+                                state: { mascota: m, ...state },
+                            })}
+                            >
+                            Cita
+                            </button>
+                        )}
                       </div>
                     </td>
                   </tr>
