@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { configurarBD } from "../../base-datos/configuracion";
-//import { useAuth } from "../../context/AuthContext";
+
 
 import PageHeader   from "./vistas/encabezadoPagina";
 import TarjetaDueno from "./vistas/tarjetaDueno";
@@ -15,7 +15,7 @@ const BADGE_ESPECIE = {
 export default function VerMascotas({esAdmin = true, onEditarDueno, nombreProp, correoProp, telefonoProp}) {
   const navigate = useNavigate();
   const location = useLocation();
-  //const {usuario} = useAuth(); //obtenemos el usuario de la sesion global
+ 
   const datosRuta = location.state ?? {};
 
   const correoUsuario = esAdmin ?  datosRuta.correoUsuario : (correoProp || datosRuta.correoUsuario);
