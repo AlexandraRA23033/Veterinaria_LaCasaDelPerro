@@ -1,7 +1,7 @@
-// mascotas/VerMascotas.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { configurarBD } from "../../base-datos/configuracion";
+//import { useAuth } from "../../context/AuthContext";
 
 import PageHeader   from "./vistas/encabezadoPagina";
 import TarjetaDueno from "./vistas/tarjetaDueno";
@@ -12,14 +12,15 @@ const BADGE_ESPECIE = {
 };
 
 //añadimos la prop esAdmin con valor por defecto true
-export default function VerMascotas({esAdmin = true}) {
+export default function VerMascotas({esAdmin = true, onEditarDueno, nombreProp, correoProp, telefonoProp}) {
   const navigate = useNavigate();
   const location = useLocation();
+  //const {usuario} = useAuth(); //obtenemos el usuario de la sesion global
   const datosRuta = location.state ?? {};
 
-  const correoUsuario = datosRuta.correoUsuario;
-  const nombreUsuario = datosRuta.nombreUsuario;
-  const telefonoUsuario = datosRuta.telefonoUsuario;
+  const correoUsuario = esAdmin ?  datosRuta.correoUsuario : (correoProp || datosRuta.correoUsuario);
+  const nombreUsuario = esAdmin ? datosRuta.nombreUsuario : (nombreProp || datosRuta.nombreUsuario); 
+  const telefonoUsuario =  esAdmin ? datosRuta.telefonoUsuario : (telefonoProp || datosRuta.telefonoUsuario);
 
   const [mascotas,    setMascotas]    = useState([]);
   const [cargando,    setCargando]    = useState(true);
@@ -76,6 +77,7 @@ export default function VerMascotas({esAdmin = true}) {
         correoUsuario={correoUsuario}
         telefonoUsuario={telefonoUsuario}
         cantidadMascotas={mascotas.length}
+        onEditarDueno={onEditarDueno} //le pasa el puente a la tarjeta
       />
 
       <div className="card br-3 shadow-sm p-3">
@@ -162,7 +164,7 @@ export default function VerMascotas({esAdmin = true}) {
                           {esAdmin && (
                             <button
                                 className="btn-outline-secondary btn-sm"
-                                onClick={() => navigate("/mascotas/cita", {
+                                onClick={() => navigate("/citas", {
                                 state: { mascota: m, ...state },
                             })}
                             >
