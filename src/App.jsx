@@ -231,7 +231,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/citas");
+                          goTo("/citass");
                         }}
                       >
                         Mis citas
@@ -378,7 +378,7 @@ function AppContent() {
             <Route
               path="/usuarios/editar"
               element={
-                <RutaProtegida rolRequerido="admin">
+                <RutaProtegida > {/**Quitamos rolRequerido = "admin" */}
                   <EditarUsuario />
                 </RutaProtegida>
               }
