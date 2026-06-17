@@ -1,9 +1,9 @@
 import {useState} from 'react';
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
 import Estadisticas from './Estadisticas';
 
 const DashboardAdmin = () =>{
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
     const [actividades] = useState([
         {id:1, detalle: "Carlos Pérez registró a 'Mimi' (Pastor Alemán)", hora: "Hace 10 min", tipo: "success"},
         {id:2, detalle: "Cita médica agendada para 'Luna' (Gato Persa)", hora: "Hace 25 min", tipo: "warning"},
@@ -24,7 +24,7 @@ const DashboardAdmin = () =>{
 
             <div className='row'>
                 {/*Accesos Rapido Operativos */}
-                <div className='col-md-5 mb-2'>
+                {/* <div className='col-md-5 mb-2'>
                     <div className='card br-3 p-3'>
                         <h3 className='text-accent fs-3 mb-2'>Acciones Rápidas</h3>
                         <div className='form-group'>
@@ -39,7 +39,7 @@ const DashboardAdmin = () =>{
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/*Tabla de Monitoreo en Tiempo Real */}
                 <div className='col-md-7 mb-2'>

@@ -30,6 +30,7 @@ import TablaInventario from "./componentes/inventario/TablaInventario";
 import AlertaStock from "./componentes/inventario/AlertaStock";
 import TablaServicios from "./componentes/inventario/TablaServicios";
 import { obtenerProductosDB, obtenerLotesDB } from "./base-datos/configuracion";
+import DashboardUsuario from "./componentes/panel-control/DashboardUsuario";
 
 
 function AppContent() {
@@ -219,7 +220,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/Dasboard-usuario/Mascotas");
+                          goTo("/expedientes");
                         }}
                       >
                         Mis mascotas
@@ -239,6 +240,28 @@ function AppContent() {
                   </>
                 )}
               </ul>
+                 {/**--Seccion Acciones: solo para admin */}
+              {usuario.rol === "admin" && (
+                <>
+                  <div className="sidebar-header">
+                    <strong>Acciones</strong>
+                  </div>
+                  <div className="p-2">
+                    <button 
+                      className='btn-dark btn-block btn-md mb-2' 
+                      onClick={() => goTo('/citas')}
+                      >
+                      Agendar Cita
+                    </button>
+                    <button 
+                      className='btn-dark btn-block btn-md mb-2' 
+                      onClick={() => goTo('/historial')}>
+                      Historial
+                    </button>
+                  </div>
+                </>
+              )}
+
             </aside>
             <button
               className={`sidebar-toggle-btn ${sidebarOpen ? "is-open" : ""}`}
@@ -282,7 +305,7 @@ function AppContent() {
             <Route
               path="/mascotas/formularioMascotas"
               element={
-                <RutaProtegida rolRequerido="admin">
+                <RutaProtegida>        {/*permite a ambos agregar mascota */}
                   <FormularioMascotas />
                 </RutaProtegida>
               }
@@ -292,11 +315,11 @@ function AppContent() {
               </RutaProtegida>
             }/>
             <Route path="/mascotas/expediente" element={
-              <RutaProtegida rolRequerido="admin"><VerExpedienteMascota />
+              <RutaProtegida ><VerExpedienteMascota />    {/*permite a ambos ver expediente */}
               </RutaProtegida>
             }/>
             <Route path="/mascotas/editar" element={
-              <RutaProtegida rolRequerido="admin"><EditarExpediente />
+              <RutaProtegida><EditarExpediente /> {/*permite a ambos editar */}
               </RutaProtegida>
             }/>
             
@@ -329,9 +352,10 @@ function AppContent() {
               path="/expedientes"
               element={
                 <RutaProtegida rolRequerido="usuario">
-                  <div className="container mt-3">
+                  {/* <div className="container mt-3">
                     <h1>Mis mascotas</h1>
-                  </div>
+                  </div> */}
+                  <DashboardUsuario />
                 </RutaProtegida>
               }
             />
