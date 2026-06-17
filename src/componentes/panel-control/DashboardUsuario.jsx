@@ -73,7 +73,7 @@ export default function DashboardUsuario(){
         <div className="container mt-2">
             <div className="card bg-light p-3 br-2 mb-1 shadow-sm">
                 {/**usamos el estado local datosUsuario que lee de IndexedDB */}
-                <h2 className="text-primary  fw-bold mb-1">¡Bienvenido de vuelta, {datosUsuario.nombre}!</h2>
+                <h2 className="text-primary  fw-bold mb-1">¡Bienvenid@, {datosUsuario.nombre}!</h2>
                 <p className="text-muted fs-3">Desde aquí puedes gestionar los datos y consultar el historial clínico de tus mascotas.</p>
             </div>
 
