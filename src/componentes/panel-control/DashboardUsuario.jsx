@@ -71,17 +71,19 @@ export default function DashboardUsuario(){
 
     return(
         <div className="container mt-2">
-            <div className="card bg-light p-3 br-2 mb-1 shadow-sm">
+            <div className="card bg-light p-3 br-2 mb-1 shadow-sm d-flex j-cont-bet align-item f-wrap gap-1">
                 {/**usamos el estado local datosUsuario que lee de IndexedDB */}
                 <h2 className="text-primary  fw-bold mb-1">¡Bienvenid@, {datosUsuario.nombre}!</h2>
                 <p className="text-muted fs-3">Desde aquí puedes gestionar los datos y consultar el historial clínico de tus mascotas.</p>
             </div>
+            <button type="button" className="btn-primary btn-md fw-bold shadow-sm" onClick={()=> navigate("/usuarios/editar", {state:{usuario:datosUsuario}})}>
+                Editar Perfil
+            </button>
 
             <VerMascotas esAdmin={false}  
             nombreProp={datosUsuario.nombre}
             correoProp={datosUsuario.correo}
             telefonoProp={datosUsuario.telefono}
-            onEditarDueno={() =>navigate("/usuarios/editar")}
             />
         </div>
     );
