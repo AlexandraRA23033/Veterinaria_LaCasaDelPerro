@@ -67,7 +67,7 @@ export default function VerMascotas({esAdmin = true, onEditarDueno, nombreProp, 
             titulo="Gestión Mascotas"
             subtitulo="Gestiona las mascotas registradas para este usuario"
             colorTitulo="text-primary"
-            onVolver={() => navigate("/gestion")}
+            onVolver={() => navigate(-1)}
             />
 
         )}

@@ -47,7 +47,7 @@ export default function FormularioMascotas() {
         estado:        "activo",
       });
       setExito(true);
-      setTimeout(() => navigate("/gestion"), 2000);
+      setTimeout(() => navigate(-1), 2000);
     } catch (err) {
       console.error(err);
       setError("Error al guardar. Intenta de nuevo.");
