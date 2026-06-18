@@ -95,7 +95,11 @@ export default function VerMascotas({esAdmin = true, onEditarDueno, nombreProp, 
           <p className="text-muted">Cargando mascotas...</p>
         ) : mascotas.length === 0 ? (
           <div className="alerta primary text-center">
-            Este usuario no tiene mascotas registradas aún.
+            {esAdmin 
+            ? "Este usuario no tiene mascotas registradas aún."
+            : "No tienes mascotas registradas aún."
+            }
+            
           </div>
         ) : (
           <div className="table-container shadow-sm br-1">
