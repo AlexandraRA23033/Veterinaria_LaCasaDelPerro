@@ -22,6 +22,8 @@ import FormularioMascotas from "./componentes/mascotas/formularioMascotas";
 import AgendarCita from "./componentes/citas/AgendarCita";
 //import EstadoCita from "./componentes/citas/EstadoCita";
 //import ListaCitas from "./componentes/citas/ListaCitas";
+import VistaRapida from "./componentes/citas/VistaRapida";
+import HistorialCitas from "./componentes/citas/HistorialCitas";
 import VerMascotas from "./componentes/mascotas/VerMascotas";
 import VerExpedienteMascota from "./componentes/mascotas/VerExpedienteMascota";
 import EditarExpediente from "./componentes/mascotas/editarMascota";
@@ -249,7 +251,7 @@ function AppContent() {
                   <div className="p-2">
                     <button 
                       className='btn-dark btn-block btn-md mb-2' 
-                      onClick={() => goTo('/citas')}
+                      onClick={() => goTo('/AgendaRapida')}
                       >
                       Agendar Cita
                     </button>
@@ -364,6 +366,22 @@ function AppContent() {
               element={
                 <RutaProtegida rolRequerido="admin">
                   <AgendarCita />
+                </RutaProtegida>
+              }
+            />
+                <Route
+              path="/AgendaRapida"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <VistaRapida />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/historial"
+              element={
+                <RutaProtegida rolRequerido="admin">
+                  <HistorialCitas />
                 </RutaProtegida>
               }
             />

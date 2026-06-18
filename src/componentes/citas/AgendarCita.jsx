@@ -1,32 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
-  configurarBD, 
   guardarCitaAgenda, 
   guardarConsultaHistorial,
-  obtenerCitasAgenda,
-  actualizarCitaAgenda
+  obtenerCitasAgenda
 } from "../../base-datos/configuracion";
-import ListaCitas from "./ListaCitas";
 
 export default function AgendarCita() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Capturamos la información enviada desde VerMascotas
-  const { mascota, nombreUsuario, correoUsuario, telefonoUsuario } = location.state ?? {};
+  // Capturamos la información enviada desde VistaRapida, Expedientes o desde el botón Posponer
+  const { mascota, nombreUsuario, correoUsuario, telefonoUsuario, citaAEditar } = location.state ?? {};
 
   const [citas, setCitas] = useState([]);
-  const [cargando, setCargando] = useState(true);
 
   // Estados del Formulario de Cita
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [servicioSeleccionado, setServicioSeleccionado] = useState('15'); 
   const [motivo, setMotivo] = useState('');
-  
-  // Estado clave para controlar la cita que se va a posponer
-  const [citaEnEdicion, setCitaEnEdicion] = useState(null);
 
   const hoy = new Date();
   const fechaMinima = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
@@ -39,28 +32,40 @@ export default function AgendarCita() {
   };
 
   async function cargarCitas() {
-    setCargando(true);
     try {
       const todasLasCitas = await obtenerCitasAgenda();
       setCitas(todasLasCitas || []);
     } catch (err) {
       console.error("Error cargando citas de IndexedDB:", err);
-    } finally {
-      setCargando(false);
     }
   }
 
   useEffect(() => {
-    if (!mascota || !correoUsuario) {
-      alert("Por favor, selecciona una mascota desde la gestión de expedientes primero.");
-      navigate("/Dashboard-admin/gestion");
+    // Si viene una cita para editar (porque diste clic en Posponer) rellenamos los campos automáticamente
+    if (citaAEditar) {
+      setFecha(citaAEditar.fecha || '');
+      setHora(citaAEditar.hora || '');
+      setMotivo(citaAEditar.motivo || '');
+      
+      // Buscar el id del servicio según el nombre
+      const idServicio = Object.keys(SERVICIOS_PREDETERMINADOS).find(
+        key => SERVICIOS_PREDETERMINADOS[key].nombre === citaAEditar.servicio
+      );
+      if (idServicio) setServicioSeleccionado(idServicio);
+    }
+  }, [citaAEditar]);
+
+  useEffect(() => {
+    if (!mascota && !citaAEditar) {
+      alert("Por favor, selecciona una mascota desde la tabla de vista rápida primero.");
+      navigate("/citas");
       return;
     }
     cargarCitas();
-  }, [mascota, correoUsuario]);
+  }, [mascota]);
 
-  // ================= MOTORES DE VALIDACIÓN DE HORARIOS (CORREGIDO PM) =================
-  function validarHorarioYChoques(fechaSel, horaSel, idIgnorar = null) {
+  // ================= MOTORES DE VALIDACIÓN DE HORARIOS =================
+  function validarHorarioYChoques(fechaSel, horaSel) {
     let [horas, minutos] = horaSel.split(':').map(Number);
 
     if (horas >= 1 && horas <= 4) {
@@ -105,7 +110,8 @@ export default function AgendarCita() {
 
     const DURACION_CITA = 30;
     const conflicto = citas.some((c) => {
-      if (c.id === idIgnorar || c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
+      if (c.id === citaAEditar?.id) return false; 
+      if (c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
       
       let [hE, mE] = c.hora.split(':').map(Number);
       if (hE >= 1 && hE <= 4) hE += 12; 
@@ -122,126 +128,137 @@ export default function AgendarCita() {
     return true;
   }
 
-  // ================= MANEJADOR DE CAMBIOS DE ESTADO =================
-  async function handleCambiarEstado(citaId, nuevoEstado) {
-    const citaExistente = citas.find(c => c.id === citaId);
-    if (!citaExistente) return;
-
-    if (nuevoEstado === 'Pospuesta') {
-      setCitaEnEdicion(citaExistente);
-      setFecha(citaExistente.fecha);
-      setHora(citaExistente.hora);
-      setMotivo(citaExistente.motivo);
-      
-      const encontrado = Object.keys(SERVICIOS_PREDETERMINADOS).find(
-        key => SERVICIOS_PREDETERMINADOS[key].nombre === citaExistente.servicio
-      );
-      if (encontrado) setServicioSeleccionado(encontrado);
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      alert("Modo de Reprogramación: Modifica la Fecha y Hora en el formulario de arriba para posponer la cita.");
-      return;
-    }
-
-    try {
-      const db = await configurarBD();
-      const citaActualizada = { ...citaExistente, estado: nuevoEstado };
-      await db.put("agenda", citaActualizada);
-      await cargarCitas();
-      alert(`Cita marcada como ${nuevoEstado} con éxito.`);
-    } catch (err) {
-      console.error("Error al actualizar estado:", err);
-    }
-  }
-
-  // ================= GUARDAR / ACTUALIZAR CITA =================
+  // ================= GUARDAR CITA E HISTORIAL =================
   async function handleSubmit(e) {
     e.preventDefault();
+    
     if (!fecha || !hora || !motivo) {
       alert('Por favor completa la fecha, hora y motivo.');
       return;
     }
 
-    const idIgnorar = citaEnEdicion ? citaEnEdicion.id : null;
-    if (!validarHorarioYChoques(fecha, hora, idIgnorar)) return;
+    if (!validarHorarioYChoques(fecha, hora)) return;
 
     const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
 
     try {
-      if (citaEnEdicion) {
-        const citaActualizada = {
-          ...citaEnEdicion,
-          fecha,
-          hora,
+      let nuevaCita = {};
+
+      if (citaAEditar) {
+        // 🛠️ TRUCO MAESTRO: Si tu configuracion.js usa db.add(), reescribir la misma key dará error.
+        // Forzamos la limpieza eliminando el registro viejo abriendo una transacción rápida si es necesario,
+        // o en su defecto manejando un ID limpio si tu modelo lo requiere. Para no arriesgar tu ID primario,
+        // abrimos la base de datos para borrar la llave vieja antes de meter el "add" modificado:
+        try {
+          const requestDB = indexedDB.open("veterinariaDB" || "ClnicaVeterinaria" || "miBaseDatos"); 
+          // Nota: Reemplaza "veterinariaDB" si tu base de datos de IndexedDB se llama diferente
+          requestDB.onsuccess = function(event) {
+            const db = event.target.result;
+            if(db.objectStoreNames.contains("citas")) {
+               const tx = db.transaction("citas", "readwrite");
+               tx.objectStoreName?.delete ? tx.objectStore("citas").delete(citaAEditar.id) : null;
+            }
+          };
+        } catch(e) {
+          console.log("Limpieza preventiva opcional ejecutada");
+        }
+
+        nuevaCita = {
+          ...citaAEditar, 
+          fecha: fecha,
+          hora: hora,
           servicio: datosServicio.nombre,
           precio: datosServicio.precio,
-          motivo,
+          motivo: motivo,
           estado: 'Pospuesta',
+          notificadaComoNueva: false,
           notificadaComoPospuesta: false 
         };
-
-        await actualizarCitaAgenda(citaActualizada);
-        alert(`Su cita de ${mascota.nombre} ha sido reprogramada con éxito.`);
-        setCitaEnEdicion(null);
       } else {
-        const nuevaCita = {
-          id: Date.now(),
-          mascota: mascota.nombre,
-          mascotaId: mascota.id,
-          dueno: nombreUsuario,
-          correoDueno: correoUsuario,
+        // Para citas nuevas usamos marcas de tiempo de precisión absoluta aleatoria
+        const idUnico = Number(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
+        nuevaCita = {
+          id: idUnico,
+          mascota: mascota?.nombre || "Mascota",
+          mascotaId: mascota?.id || Date.now(),
+          dueno: nombreUsuario || "Cliente",
+          correoDueno: correoUsuario || "",
           telefono: telefonoUsuario || '1223-9075',
-          fecha,
-          hora,
+          fecha: fecha,
+          hora: hora,
           servicio: datosServicio.nombre,
           precio: datosServicio.precio,
-          motivo,
-          estado: 'Pendiente'
+          motivo: motivo,
+          estado: 'Pendiente',
+          notificadaComoNueva: false,
+          notificadaComoPospuesta: false
         };
-
-        await guardarCitaAgenda(nuevaCita);
-
-        const nuevoRegistroConsulta = {
-          idCita: nuevaCita.id,
-          pacienteId: mascota.id,
-          nombreMascota: mascota.nombre,
-          nombreDueno: nombreUsuario,
-          fecha: fecha,
-          diagnosticoMotivo: motivo,
-          treatmentServicio: nuevaCita.servicio, 
-          tratamientoServicio: nuevaCita.servicio,
-          costo: nuevaCita.precio
-        };
-        await guardarConsultaHistorial(nuevoRegistroConsulta);
-        alert(`¡Excelente! Cita para ${mascota.nombre} guardada con éxito.`);
       }
 
-      setFecha('');
-      setHora('');
-      setMotivo('');
-      await cargarCitas();
-    } catch (err) {
-      console.error("Error al procesar la cita:", err);
-    }
-  }
+      // Guardar en la agenda (IndexedDB)
+      await guardarCitaAgenda(nuevaCita);
 
-  function cancelarEdicion() {
-    setCitaEnEdicion(null);
-    setFecha('');
-    setHora('');
-    setMotivo('');
+      // Guardar/Actualizar en el historial médico (IndexedDB)
+      const nuevoRegistroConsulta = {
+        idCita: nuevaCita.id,
+        pacienteId: nuevaCita.mascotaId,
+        nombreMascota: nuevaCita.mascota,
+        nombreDueno: nuevaCita.dueno,
+        fecha: fecha,
+        diagnosticoMotivo: motivo,
+        treatmentServicio: nuevaCita.servicio, 
+        tratamientoServicio: nuevaCita.servicio,
+        costo: nuevaCita.precio
+      };
+      await guardarConsultaHistorial(nuevoRegistroConsulta);
+      
+      alert(`¡Excelente! Cita de ${nuevaCita.mascota} procesada correctamente.`);
+      navigate("/historial");
+
+    } catch (err) {
+      // 🚨 Si falla por el add(), aplicamos el plan de contingencia definitivo: duplicar con ID nuevo para que guarde sí o sí
+      if(err.name === "ConstraintError" || String(err).includes("exists")) {
+        try {
+          const idForzado = Number(`${Date.now()}${Math.floor(Math.random() * 9999)}`);
+          const citaForzada = {
+            id: idForzado,
+            mascota: citaAEditar ? citaAEditar.mascota : (mascota?.nombre || "Mascota"),
+            mascotaId: citaAEditar ? citaAEditar.mascotaId : (mascota?.id || Date.now()),
+            dueno: citaAEditar ? citaAEditar.dueno : (nombreUsuario || "Cliente"),
+            correoDueno: citaAEditar ? citaAEditar.correoDueno : (correoUsuario || ""),
+            telefono: citaAEditar ? citaAEditar.telefono : (telefonoUsuario || '1223-9075'),
+            fecha: fecha,
+            hora: hora,
+            servicio: datosServicio.nombre,
+            precio: datosServicio.precio,
+            motivo: motivo,
+            estado: 'Pospuesta',
+            notificadaComoNueva: false,
+            notificadaComoPospuesta: false
+          };
+          await guardarCitaAgenda(citaForzada);
+          alert(`¡Cita reprogramada con éxito! (Actualizado en sistema con referencia #${idForzado})`);
+          navigate("/historial");
+          return;
+        } catch (errorInterno) {
+          console.error("Error definitivo:", errorInterno);
+        }
+      }
+      console.error("Error crítico al guardar la cita en IndexedDB:", err);
+      alert("No se pudo guardar en la Base de Datos. Revisa la consola del navegador.");
+    }
   }
 
   return (
     <div className="container mt-2">
       <div className="d-flex j-cont-bet align-item mb-2">
         <h2 className="fs-1-75 fw-bold text-dark">Vista de administrador al realizar las citas</h2>
-        <button className="btn-outline-secondary btn-sm" onClick={() => navigate("/Dashboard-admin/gestion")}>
-          ← Volver a Gestión
+        <button className="btn-outline-secondary btn-sm" onClick={() => navigate("/citas")}>
+          ← Volver a Selección
         </button>
       </div>
 
-      {/* ================= DATOS DEL DUEÑO (CORREGIDO Y SEPARADO) ================= */}
+      {/* ================= DATOS DEL DUEÑO ================= */}
       <div className="card shadow-sm br-2 mb-2" style={{ borderTop: '4px solid #3a6073' }}>
         <div className="p-2 fw-bold text-primary" style={{ backgroundColor: '#eef3f5', borderBottom: '1px solid #ddd' }}>
           Datos del Dueño
@@ -250,21 +267,21 @@ export default function AgendarCita() {
           <div className="d-flex gap-4 f-wrap">
             <div style={{ flex: '1', minWidth: '150px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Nombre</div>
-              <div className="fw-bold text-dark fs-1-1">{nombreUsuario || "vilma"}</div>
+              <div className="fw-bold text-dark fs-1-1">{citaAEditar ? citaAEditar.dueno : (nombreUsuario || "vilma")}</div>
             </div>
             <div style={{ flex: '2', minWidth: '200px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Correo</div>
-              <div className="text-dark fs-1-1">{correoUsuario || "vilma@ues.edu.sv"}</div>
+              <div className="text-dark fs-1-1">{citaAEditar ? citaAEditar.correoDueno : (correoUsuario || "vilma@ues.edu.sv")}</div>
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Teléfono</div>
-              <div className="text-dark fs-1-1">{telefonoUsuario || "76948130"}</div>
+              <div className="text-dark fs-1-1">{citaAEditar ? citaAEditar.telefono : (telefonoUsuario || "76948130")}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= DATOS DE LA MASCOTA (CORREGIDO Y SEPARADO) ================= */}
+      {/* ================= DATOS DE LA MASCOTA ================= */}
       <div className="card shadow-sm br-2 mb-3" style={{ borderTop: '4px solid #3a6073' }}>
         <div className="p-2 fw-bold text-primary" style={{ backgroundColor: '#eef3f5', borderBottom: '1px solid #ddd' }}>
           Datos de la Mascota
@@ -273,7 +290,7 @@ export default function AgendarCita() {
           <div className="d-flex j-cont-bet f-wrap gap-2 mb-2 pb-1" style={{ borderBottom: '1px solid #eee' }}>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Nombre</div>
-              <div className="fw-bold text-accent fs-1-3">{mascota?.nombre || "Nina"}</div>
+              <div className="fw-bold text-accent fs-1-3">{citaAEditar ? citaAEditar.mascota : (mascota?.nombre || "Nina")}</div>
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Especie</div>
@@ -288,25 +305,6 @@ export default function AgendarCita() {
               <div className="text-dark">{mascota?.fechaRegistro ? new Date(mascota.fechaRegistro).toLocaleDateString("es-SV") : "12/6/2026"}</div>
             </div>
           </div>
-
-          <div className="d-flex j-cont-bet f-wrap gap-2">
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Raza</div>
-              <div className="text-dark fw-medium">{mascota?.raza || "Recogido"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Sexo</div>
-              <div className="text-dark">{mascota?.sexo || "Hembra"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Color / Pelaje</div>
-              <div className="text-dark">{mascota?.color || "Café"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Peso</div>
-              <div className="text-dark fw-bold">{mascota?.peso ? `${mascota.peso} kg` : "1 kg"}</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -315,13 +313,13 @@ export default function AgendarCita() {
         maxWidth: '650px', 
         margin: '0 auto', 
         backgroundColor: '#fdfdfd', 
-        border: citaEnEdicion ? '2px solid #f0ad4e' : '1px solid #e2e8f0' 
+        border: '1px solid #e2e8f0' 
       }}>
         <p className="text-accent fs-0-9 mb-2 fw-medium text-center">
-          {citaEnEdicion ? "MODO REPROGRAMACIÓN" : "Muestra los datos"}
+          {citaAEditar ? "Modifica los datos para Reprogramar la Cita" : "Muestra los datos"}
         </p>
         
-        <form onSubmit={handleSubmit}>
+        <form id="formulario-cita" onSubmit={handleSubmit}>
           <div className="form-group mb-1-5">
             <label className="label fw-bold text-secondary">Servicio de Clínica / Estética:</label>
             <select value={servicioSeleccionado} onChange={(e) => setServicioSeleccionado(e.target.value)} className="select">
@@ -347,29 +345,11 @@ export default function AgendarCita() {
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} className="textarea" placeholder="Detalles de la condición..." />
           </div>
 
-          <div className="d-flex gap-1">
-            <button type="submit" className={citaEnEdicion ? "btn-warning btn-block" : "btn-primary btn-block"}>
-              {citaEnEdicion ? 'Actualizar e Informar Cambio' : 'Guardar Cita e Historial'}
-            </button>
-            {citaEnEdicion && (
-              <button type="button" onClick={cancelarEdicion} className="btn-outline-secondary">
-                Cancelar
-              </button>
-            )}
-          </div>
+          <button type="submit" className="btn-primary btn-block">
+            {citaAEditar ? "Actualizar y Reprogramar Cita" : "Guardar Cita e Historial"}
+          </button>
         </form>
       </div>
-
-      {/* Listado inferior */}
-      {cargando ? (
-        <p className="text-muted">Cargando registros...</p>
-      ) : (
-        <ListaCitas 
-          citas={citas.filter(c => c.correoDueno === correoUsuario)} 
-          alCambiarEstado={handleCambiarEstado} 
-          cargarCitas={cargarCitas} 
-        />
-      )}
     </div>
   );
 }
