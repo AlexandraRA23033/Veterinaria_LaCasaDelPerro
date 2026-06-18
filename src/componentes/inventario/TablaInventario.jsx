@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   registrarProductoDB, 
-  actualizarProductoDB,
+  actualizarProductoDB, 
   registrarLoteDB, 
   eliminarProductoDB, 
   eliminarLoteDB,
@@ -9,30 +9,36 @@ import {
 } from '../../base-datos/configuracion';
 
 const TablaInventario = ({ productos, lotes }) => {
-  // Estado para formulario de Producto 
-  const [nuevoProd, setNuevoProd] = useState({ id: null, nombre: '', precioVenta: '' });
-  // Estado para formulario de Lotes
-  const [nuevoLote, setNuevoLote] = useState({ loteId: '', ingreso: '', cantidad: '', productoNombre: '' });
+  // Obtener fecha actual en formato YYYY-MM-DD para la validación min de vencimientos
+  const fechaHoy = new Date().toISOString().split('T')[0];
+
+  // Estado para el Producto (Añadido el campo 'tipo')
+  const [nuevoProd, setNuevoProd] = useState({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
+  
+  // Estado para el Lote (Añadido el campo 'vencimiento' e 'ingreso')
+  const [nuevoLote, setNuevoLote] = useState({ loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
 
   const handleCrearOEditarProducto = async (e) => {
     e.preventDefault();
-    if (!nuevoProd.nombre || !nuevoProd.precioVenta) return;
+    // Validación adicional de seguridad para precios negativos
+    if (parseFloat(nuevoProd.precioVenta) <= 0) {
+      alert("El precio de venta debe ser un número positivo.");
+      return;
+    }
 
     const datosProducto = {
       nombre: nuevoProd.nombre,
-      precioVenta: parseFloat(nuevoProd.precioVenta)
+      precioVenta: parseFloat(nuevoProd.precioVenta),
+      tipo: nuevoProd.tipo
     };
 
     if (nuevoProd.id) {
-     
       await actualizarProductoDB({ id: nuevoProd.id, ...datosProducto });
     } else {
-  
       await registrarProductoDB(datosProducto);
     }
 
-    // Limpiar formulario y recargar la app de forma limpia
-    setNuevoProd({ id: null, nombre: '', precioVenta: '' });
+    setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
     window.location.reload();
   };
 
@@ -40,20 +46,31 @@ const TablaInventario = ({ productos, lotes }) => {
     setNuevoProd({
       id: prod.id,
       nombre: prod.nombre,
-      precioVenta: prod.precioVenta
+      precioVenta: prod.precioVenta,
+      tipo: prod.tipo || 'Medicamento'
     });
   };
 
   const handleCancelarEdicion = () => {
-    setNuevoProd({ id: null, nombre: '', precioVenta: '' });
+    setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
   };
 
   const handleCrearLote = async (e) => {
     e.preventDefault();
-    if (!nuevoLote.loteId || !nuevoLote.ingreso || !nuevoLote.cantidad || !nuevoLote.productoNombre) return;
+    if (parseInt(nuevoLote.cantidad) <= 0) {
+      alert("La cantidad inicial debe ser mayor o igual a 1 unidad.");
+      return;
+    }
+    // Validación manual de fecha de vencimiento por si el navegador no soporta el atributo min
+    if (nuevoLote.vencimiento < fechaHoy) {
+      alert("Error: No se pueden registrar lotes con fechas de vencimiento anteriores a la fecha de hoy.");
+      return;
+    }
+
     await registrarLoteDB({
       loteId: nuevoLote.loteId,
       ingreso: nuevoLote.ingreso,
+      vencimiento: nuevoLote.vencimiento,
       cantidad: parseInt(nuevoLote.cantidad),
       productoNombre: nuevoLote.productoNombre
     });
@@ -61,7 +78,7 @@ const TablaInventario = ({ productos, lotes }) => {
   };
 
   const handleBorrarProducto = async (id) => {
-    if (confirm("¿Estás seguro de eliminar este producto del inventario?")) {
+    if (confirm("¿Estás seguro de eliminar este artículo del inventario?")) {
       await eliminarProductoDB(id);
       window.location.reload();
     }
@@ -76,148 +93,149 @@ const TablaInventario = ({ productos, lotes }) => {
 
   return (
     <div>
-      {/* SECCIÓN FORMULARIOS CRUD */}
       <div className="d-flex f-wrap gap-1 mb-3">
-        {/* Formulario de Insumo / Medicamento */}
+        {/* FORMULARIO PRODUCTO: MEDICAMENTO O ACCESORIO */}
         <div className="card card-light shadow-sm br-1 f-1">
           <div className="card-header fw-bold text-primary">
-            {nuevoProd.id ? `Modificar Ficha de Insumo (ID: ${nuevoProd.id})` : "Añadir Nuevo Insumo / Medicamento"}
+            {nuevoProd.id ? `Modificar Ficha (ID: ${nuevoProd.id})` : "Añadir Nuevo Insumo / Artículo"}
           </div>
           <form onSubmit={handleCrearOEditarProducto} className="card-body">
             <div className="form-group mb-1">
-              <label className="fw-bold">Nombre Técnico:</label>
-              <input type="text" className="input" placeholder="Ej: Paracetamol Gotas" 
+              <label className="fw-bold">Nombre Técnico / Artículo:</label>
+              <input type="text" className="input" placeholder="Ej: Collar Antipulgas o Amoxicilina" 
                 value={nuevoProd.nombre} onChange={e => setNuevoProd({...nuevoProd, nombre: e.target.value})} required />
             </div>
-            <div className="form-group mb-1">
-              <label className="fw-bold">Precio de Venta ($):</label>
-              <input type="number" step="0.01" className="input" placeholder="0.00"
-                value={nuevoProd.precioVenta} onChange={e => setNuevoProd({...nuevoProd, precioVenta: e.target.value})} required />
+            <div className="d-flex gap-1 mb-1">
+              <div className="form-group f-1">
+                <label className="fw-bold">Clasificación / Tipo:</label>
+                <select className="input" value={nuevoProd.tipo} onChange={e => setNuevoProd({...nuevoProd, tipo: e.target.value})}>
+                  <option value="Medicamento">Medicamento</option>
+                  <option value="Accesorio">Accesorio</option>
+                  <option value="Alimento">Alimento</option>
+                  <option value="Higiene">Higiene</option>
+                </select>
+              </div>
+              <div className="form-group f-1">
+                <label className="fw-bold">Precio Venta ($):</label>
+                <input type="number" step="0.01" min="0.01" className="input" placeholder="0.00"
+                  value={nuevoProd.precioVenta} onChange={e => setNuevoProd({...nuevoProd, precioVenta: e.target.value})} required />
+              </div>
             </div>
             <div className="d-flex gap-1 mt-1">
               <button type="submit" className="btn btn-primary btn-sm f-1">
-                {nuevoProd.id ? "Actualizar Producto" : "Registrar Ficha"}
+                {nuevoProd.id ? "Actualizar Registro" : "Registrar Ficha"}
               </button>
               {nuevoProd.id && (
-                <button type="button" onClick={handleCancelarEdicion} className="btn btn-secondary btn-sm">
-                  Cancelar
-                </button>
+                <button type="button" onClick={handleCancelarEdicion} className="btn btn-secondary btn-sm">Cancelar</button>
               )}
             </div>
           </form>
         </div>
 
-        {/* Registro Lote PEPS */}
+        {/* FORMULARIO LOTE: VALIDACIONES CONTROLADAS */}
         <div className="card card-light shadow-sm br-1 f-1">
           <div className="card-header fw-bold text-primary">Ingresar Lote al Almacén (Cola PEPS)</div>
           <form onSubmit={handleCrearLote} className="card-body">
             <div className="form-group mb-1">
-              <label className="fw-bold">Seleccionar Producto:</label>
+              <label className="fw-bold">Seleccionar Artículo del Catálogo:</label>
               <select className="input" value={nuevoLote.productoNombre} onChange={e => setNuevoLote({...nuevoLote, productoNombre: e.target.value})} required>
-                <option value="">-- Escoger --</option>
-                {productos.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                <option value="">-- Seleccionar --</option>
+                {productos.map(p => <option key={p.id} value={p.nombre}>{p.nombre} ({p.tipo})</option>)}
               </select>
             </div>
             <div className="d-flex gap-1 mb-1">
               <div className="form-group f-1">
                 <label className="fw-bold">Código Lote:</label>
-                <input type="text" className="input" placeholder="LOTE-000"
-                  value={nuevoLote.loteId} onChange={e => setNuevoLote({...nuevoLote, loteId: e.target.value})} required />
+                <input type="text" className="input" placeholder="LOTE-000" value={nuevoLote.loteId} onChange={e => setNuevoLote({...nuevoLote, loteId: e.target.value})} required />
               </div>
               <div className="form-group f-1">
-                <label className="fw-bold">Cantidad Inicial:</label>
-                <input type="number" className="input" placeholder="Uds"
-                  value={nuevoLote.cantidad} onChange={e => setNuevoLote({...nuevoLote, cantidad: e.target.value})} required />
+                <label className="fw-bold">Cantidad (Uds):</label>
+                <input type="number" min="1" className="input" placeholder="Min 1" value={nuevoLote.cantidad} onChange={e => setNuevoLote({...nuevoLote, cantidad: e.target.value})} required />
               </div>
             </div>
-            <div className="form-group mb-1">
-              <label className="fw-bold">Fecha de Ingreso:</label>
-              <input type="date" className="input"
-                value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} required />
+            <div className="d-flex gap-1 mb-1">
+              <div className="form-group f-1">
+                <label className="fw-bold">Fecha de Ingreso:</label>
+                <input type="date" className="input" value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} required />
+              </div>
+              <div className="form-group f-1">
+                <label className="fw-bold">Vencimiento Médico:</label>
+                {/* min={fechaHoy} bloquea visualmente las fechas anteriores en el calendario del navegador */}
+                <input type="date" min={fechaHoy} className="input" value={nuevoLote.vencimiento} onChange={e => setNuevoLote({...nuevoLote, vencimiento: e.target.value})} required />
+              </div>
             </div>
             <button type="submit" className="btn btn-secondary btn-sm w-100 mt-1">Acoplar a PEPS</button>
           </form>
         </div>
       </div>
 
-      {/*TABLA PRINCIPAL DE PRODUCTOS */}
+      {/* TABLA PRINCIPAL */}
       <div className="table-container shadow-sm br-1 mb-3">
         <table className="table table-clara-primary table-bordered">
           <thead>
             <tr>
               <th>#</th>
-              <th>Medicamento / Insumo</th>
+              <th>Artículo / Insumo</th>
+              <th>Tipo</th>
               <th>Precio Venta</th>
               <th>Stock Total</th>
-              <th>Estado Administrativo</th>
-              <th>Acciones Operativas</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {productos.map((prod, index) => {
-              const lotesDelProd = lotes.filter(l => l.productoNombre === prod.nombre);
-              // Invocamos la función matemática de la base de datos
-              const stock = calcularStockTotalPEPS(lotesDelProd);
-              const esCritico = stock <= 5;
+            {productos.length === 0 ? (
+              <tr><td colSpan="7" className="text-center text-muted p-2">No hay artículos cargados en el inventario desde cero.</td></tr>
+            ) : (
+              productos.map((prod, index) => {
+                const lotesDelProd = lotes.filter(l => l.productoNombre === prod.nombre);
+                const stock = calcularStockTotalPEPS(lotesDelProd);
+                const esCritico = stock <= 5;
 
-              return (
-                <tr key={prod.id}>
-                  <td>{index + 1}</td>
-                  <td className="fw-bold">{prod.nombre}</td>
-                  <td>${prod.precioVenta.toFixed(2)}</td>
-                  <td>
-                    <span className={`badge ${stock > 0 ? "info" : "secondary"}`}>
-                      {stock} unidade{stock !== 1 ? "s" : ""}
-                    </span>
-                  </td>
-                  <td>
-                    {esCritico ? (
-                      <span className="badge alert">CRÍTICO</span>
-                    ) : (
-                      <span className="badge success">ÓPTIMO</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="d-flex gap-1">
-                      <button onClick={() => handleSeleccionarEditar(prod)} className="btn btn-secondary btn-xs">
-                        Editar
-                      </button>
-                      <button onClick={() => handleBorrarProducto(prod.id)} className="btn btn-alert btn-xs">
-                        Retirar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={prod.id}>
+                    <td>{index + 1}</td>
+                    <td className="fw-bold">{prod.nombre}</td>
+                    <td><span className="badge info">{prod.tipo || 'Medicamento'}</span></td>
+                    <td>${prod.precioVenta.toFixed(2)}</td>
+                    <td><span className={`badge ${stock > 0 ? "success" : "secondary"}`}>{stock} uds</span></td>
+                    <td>{esCritico ? <span className="badge alert">CRÍTICO</span> : <span className="badge success">ÓPTIMO</span>}</td>
+                    <td>
+                      <div className="d-flex gap-1">
+                        <button onClick={() => handleSeleccionarEditar(prod)} className="btn btn-secondary btn-xs">Editar</button>
+                        <button onClick={() => handleBorrarProducto(prod.id)} className="btn btn-alert btn-xs">Retirar</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
 
-      {/*AUDITORÍA CRONOLÓGICA DE LOTES ACTIVOS */}
+      {/* DETALLES DE LOTES Y AUDITORÍA PEPS */}
       <div className="card card-light shadow-sm br-1">
-        <div className="card-header fw-bold text-dark">
-          Auditoría de Fila PEPS (Validación de Lotes en Almacén)
-        </div>
+        <div className="card-header fw-bold text-dark">Línea Cronológica PEPS (Vencimientos y Almacenamiento)</div>
         <div className="card-body">
           {productos.map((prod) => {
             const lotesDelProd = lotes.filter(l => l.productoNombre === prod.nombre);
-
             return (
               <div key={prod.id} className="mb-2 border-bottom-light pb-1">
-                <div className="fw-bold text-primary mb-1">{prod.nombre}:</div>
+                <div className="fw-bold text-primary mb-1">{prod.nombre} ({prod.tipo || 'Medicamento'}):</div>
                 {lotesDelProd.length === 0 ? (
-                  <span className="badge secondary">AGOTADO</span>
+                  <span className="badge secondary">SIN STOCK ACTIVO</span>
                 ) : (
                   <div className="d-flex gap-1 f-wrap mt-1">
                     {lotesDelProd.map(l => (
                       <div key={l.id} className="p-1 br-1 shadow-sm bg-light d-flex align-item gap-1">
                         <div>
                           <div className="text-secondary fw-bold">ID: {l.loteId}</div>
-                          <div className="text-muted fs-sm">Ingreso: {l.ingreso}</div>
-                          <div className="fw-bold text-dark mt-1">Disponibles: {l.cantidad} uds</div>
+                          <div className="text-muted fs-sm">Ingresó: {l.ingreso}</div>
+                          <div className="text-alert fw-bold fs-sm">Vence: {l.vencimiento}</div>
+                          <div className="fw-bold text-dark mt-1">Stock: {l.cantidad} uds</div>
                         </div>
-                        <button onClick={() => handleBorrarLote(l.id)} className="btn btn-alert btn-xs ml-1" title="Consumir / Vaciar Lote">✕</button>
+                        <button onClick={() => handleBorrarLote(l.id)} className="btn btn-alert btn-xs ml-1">✕</button>
                       </div>
                     ))}
                   </div>

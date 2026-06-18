@@ -18,7 +18,7 @@ const AlertaStock = ({ productos, lotes }) => {
     <div className="alerta danger mb-2">
       <div className="d-flex j-cont-bet align-item">
         <div>
-          <strong className="text-dark">⚠️ ALERTA DE STOCK CRÍTICO:</strong>
+          <strong className="text-dark">ALERTA DE STOCK CRÍTICO:</strong>
           <ul className="mb-0 mt-1">
             {productosCriticos.map(prod => {
               const total = obtenerStockTotal(lotes.filter(l => l.productoNombre === prod.nombre));
