@@ -69,7 +69,7 @@ export default function FormularioExpediente() {
       });
 
       setExito(true);
-      setTimeout(() => navigate("/gestion"), 2000);
+      setTimeout(() => navigate("/Dashboard-admin/gestio"), 2000);
     } catch (err) {
       console.error(err);
       setError("Error al guardar. Intenta de nuevo.");

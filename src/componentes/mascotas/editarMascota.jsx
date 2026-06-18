@@ -64,7 +64,6 @@ export default function EditarExpediente() {
         subtitulo={<>Modificando expediente de <strong>{original.nombre}</strong></>}
         colorTitulo="text-success"
         onVolver={() => {
-          // Vuelve al expediente sin guardar
           navigate("/mascotas/expediente", {
             state: { mascota: original, nombreUsuario, correoUsuario, telefonoUsuario },
           });
