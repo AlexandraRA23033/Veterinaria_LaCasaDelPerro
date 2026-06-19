@@ -1,22 +1,21 @@
 import { useEffect, useState } from "react";
 import EstadoCita from './EstadoCita';
 
-const ListaCitas = ({ citas, alCambiarEstado }) => {
+/* 👇 CORREGIDO: Agregamos cargarCitas aquí */
+const ListaCitas = ({ citas, alCambiarEstado, cargarCitas }) => {
   
-  // Mapeamos los estados directamente a las clases semánticas de badges de tu framework CSS
   const obtenerClaseEstado = (estado) => {
     switch (estado) {
-      case 'Pendiente': return 'badge info';        // Azul / Información
-      case 'Pospuesta': return 'badge warning';     // Amarillo / Advertencia
-      case 'Completada': return 'badge success';    // Verde / Éxito (#6E8F6B)
-      case 'Cancelada': return 'badge danger';      // Rojo / Error (#E85C5C)
+      case 'Pendiente': return 'badge info';        
+      case 'Pospuesta': return 'badge warning';     
+      case 'Completada': return 'badge success';    
+      case 'Cancelada': return 'badge danger';      
       default: return 'badge secondary';
     }
   };
 
   return (
     <div className="mt-3">
-      {/* Cabecera del Listado Administrativo */}
       <div className="d-flex j-cont-bet align-item mb-1">
         <div>
           <h3 className="fs-1-5 fw-bold text-primary">📋 Panel de Gestión de Citas</h3>
@@ -31,7 +30,6 @@ const ListaCitas = ({ citas, alCambiarEstado }) => {
           No hay ninguna cita registrada en el sistema de reservas.
         </div>
       ) : (
-        // Contenedor estandarizado con sombras y bordes redondeados de tu librería
         <div className="table-container shadow-sm br-1">
           <table className="table table-clara-primary table-bordered">
             <thead>
@@ -47,27 +45,23 @@ const ListaCitas = ({ citas, alCambiarEstado }) => {
             <tbody>
               {citas.map((cita) => (
                 <tr key={cita.id}>
-                  {/* Datos del Paciente y Propietario */}
                   <td>
                     <strong className="text-primary">🐾 {cita.mascota}</strong>
                     <br />
                     <span className="text-muted fs-0-85">Dueño: {cita.dueno}</span>
                   </td>
 
-                  {/* Programación de Tiempos */}
                   <td>
                     <div>📅 {cita.fecha}</div>
                     <span className="fw-bold text-accent">⏰ {cita.hora}</span>
                   </td>
 
-                  {/* Servicio de la Clínica */}
                   <td>
                     <span className="fw-bold" style={{ color: 'var(--text-dark, #2F332B)' }}>
                       {cita.servicio}
                     </span>
                   </td>
 
-                  {/* Costos e Insumos con el verde exacto de tu paleta */}
                   <td>
                     <span 
                       style={{ display: 'block', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} 
@@ -79,16 +73,19 @@ const ListaCitas = ({ citas, alCambiarEstado }) => {
                     <strong style={{ color: '#6E8F6B' }}>${cita.precio.toFixed(2)}</strong>
                   </td>
 
-                  {/* Badge de Estado Dinámico */}
                   <td>
                     <span className={obtenerClaseEstado(cita.estado)}>
                       {cita.estado}
                     </span>
                   </td>
 
-                  {/* Panel de Inyección de la API de Meta */}
                   <td>
-                    <EstadoCita cita={cita} alCambiarEstado={alCambiarEstado} />
+                    {/* 👇 CORREGIDO: Le inyectamos la prop de actualización al componente de la API */}
+                    <EstadoCita 
+                      cita={cita} 
+                      alCambiarEstado={alCambiarEstado} 
+                      cargarCitas={cargarCitas} 
+                    />
                   </td>
                 </tr>
               ))}

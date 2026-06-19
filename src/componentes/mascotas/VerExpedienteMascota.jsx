@@ -1,5 +1,3 @@
-// mascotas/VerExpediente.jsx
-// Vista SOLO LECTURA. No tiene botón editar aquí, eso va en VerMascotas.
 import { useNavigate, useLocation } from "react-router-dom";
 import PageHeader   from "./vistas/encabezadoPagina";
 import TarjetaDueno from "./vistas/tarjetaDueno";
@@ -35,7 +33,7 @@ export default function VerExpediente() {
         titulo="Expediente Clínico"
         subtitulo="Vista completa del registro de la mascota"
         colorTitulo="text-success"
-        onVolver={() => navigate("/mascotas/ver", {
+        onVolver={() => navigate(-1, {
           state: { correoUsuario, nombreUsuario, telefonoUsuario }
         })}
       />

@@ -1,32 +1,30 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
-  configurarBD, 
   guardarCitaAgenda, 
   guardarConsultaHistorial,
-  obtenerCitasAgenda,
-  actualizarCitaAgenda
+  obtenerCitasAgenda
 } from "../../base-datos/configuracion";
-import ListaCitas from "./ListaCitas";
 
 export default function AgendarCita() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Capturamos la información enviada desde VerMascotas
-  const { mascota, nombreUsuario, correoUsuario, telefonoUsuario } = location.state ?? {};
+  // Capturamos la información enviada desde VistaRapida, Expedientes o desde el botón Posponer
+  const { mascota, nombreUsuario, correoUsuario, telefonoUsuario, citaAEditar } = location.state ?? {};
 
   const [citas, setCitas] = useState([]);
-  const [cargando, setCargando] = useState(true);
 
   // Estados del Formulario de Cita
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [servicioSeleccionado, setServicioSeleccionado] = useState('15'); 
   const [motivo, setMotivo] = useState('');
-  
-  // Estado clave para controlar la cita que se va a posponer
-  const [citaEnEdicion, setCitaEnEdicion] = useState(null);
+
+  // Estados del Modal
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalTitulo, setModalTitulo] = useState('');
+  const [modalMensaje, setModalMensaje] = useState('');
 
   const hoy = new Date();
   const fechaMinima = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
@@ -39,73 +37,89 @@ export default function AgendarCita() {
   };
 
   async function cargarCitas() {
-    setCargando(true);
     try {
       const todasLasCitas = await obtenerCitasAgenda();
       setCitas(todasLasCitas || []);
     } catch (err) {
       console.error("Error cargando citas de IndexedDB:", err);
-    } finally {
-      setCargando(false);
     }
   }
 
+  function mostrarAlertaModal(titulo, mensaje) {
+    setModalTitulo(titulo);
+    setModalMensaje(mensaje);
+    setModalAbierto(true);
+  }
+
   useEffect(() => {
-    if (!mascota || !correoUsuario) {
-      alert("Por favor, selecciona una mascota desde la gestión de expedientes primero.");
-      navigate("/Dashboard-admin/gestion");
+    if (citaAEditar) {
+      setFecha(citaAEditar.fecha || '');
+      setHora(citaAEditar.hora || '');
+      setMotivo(citaAEditar.motivo || '');
+      
+      const idServicio = Object.keys(SERVICIOS_PREDETERMINADOS).find(
+        key => SERVICIOS_PREDETERMINADOS[key].nombre === citaAEditar.servicio
+      );
+      if (idServicio) setServicioSeleccionado(idServicio);
+    }
+  }, [citaAEditar]);
+
+  useEffect(() => {
+    if (!mascota && !citaAEditar) {
+      mostrarAlertaModal("Atención", "Por favor, selecciona una mascota desde la tabla de vista rápida primero.");
+      setTimeout(() => {
+        setModalAbierto(false);
+        navigate("/citas");
+      }, 3000);
       return;
     }
     cargarCitas();
-  }, [mascota, correoUsuario]);
+  }, [mascota]);
 
-  // ================= MOTORES DE VALIDACIÓN DE HORARIOS (CORREGIDO PM) =================
-  function validarHorarioYChoques(fechaSel, horaSel, idIgnorar = null) {
+  // ================= MOTORES DE VALIDACIÓN DE HORARIOS =================
+  function validarHorarioYChoques(fechaSel, horaSel) {
+    if (!horaSel || !fechaSel) return false;
+
     let [horas, minutos] = horaSel.split(':').map(Number);
-
     if (horas >= 1 && horas <= 4) {
       horas += 12;
     }
 
     const tiempoEnMinutos = horas * 60 + minutos;
-
     const [anioPart, mesPart, diaPart] = fechaSel.split('-').map(Number);
     const objetoFecha = new Date(Date.UTC(anioPart, mesPart - 1, diaPart, 12, 0, 0)); 
     const diaSemana = objetoFecha.getUTCDay(); 
 
     const recordatorioHorarios = 
-      "\n\n🕒 Horarios de atención en La Casa del Perro:\n" +
-      "• Lunes a Viernes:\n" +
-      "   - Mañana: 8:00 AM a 12:00 PM\n" +
-      "   - Tarde: 1:00 PM a 4:00 PM\n" +
-      "• Sábados:\n" +
-      "   - Jornada continua: 8:00 AM a 12:00 PM\n" +
-      "• Domingos: Cerrado todo el día.";
+      "\n\nHorarios de atención:\n" +
+      "• Lunes a Viernes: 8:00 AM - 12:00 PM y 1:00 PM - 4:00 PM\n" +
+      "• Sábados: 8:00 AM - 12:00 PM\n" +
+      "• Domingos: Cerrado.";
 
     if (diaSemana === 0) {
-      alert(`La Casa del Perro está cerrada los domingos. Por favor, selecciona otro día.${recordatorioHorarios}`);
+      mostrarAlertaModal("Clínica Cerrada", `La Casa del Perro está cerrada los domingos.${recordatorioHorarios}`);
       return false;
     }
 
     if (diaSemana >= 1 && diaSemana <= 5) {
       const turnoManana = tiempoEnMinutos >= 480 && tiempoEnMinutos <= 720; 
       const turnoTarde = tiempoEnMinutos >= 780 && tiempoEnMinutos <= 960;  
-      
       if (!turnoManana && !turnoTarde) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
         return false;
       }
-    } 
-    else if (diaSemana === 6) {
+    } else if (diaSemana === 6) {
       if (tiempoEnMinutos < 480 || tiempoEnMinutos > 720) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible para día Sábado.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible los Sábados.${recordatorioHorarios}`);
         return false;
       }
     }
 
     const DURACION_CITA = 30;
     const conflicto = citas.some((c) => {
-      if (c.id === idIgnorar || c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
+      if (!c || !c.hora || !c.fecha) return false;
+      if (c.id === citaAEditar?.id) return false; 
+      if (c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
       
       let [hE, mE] = c.hora.split(':').map(Number);
       if (hE >= 1 && hE <= 4) hE += 12; 
@@ -115,133 +129,171 @@ export default function AgendarCita() {
     });
 
     if (conflicto) {
-      alert(`Conflicto de agenda: Ya existe otra cita activa en ese mismo bloque de tiempo o interfiere con un margen menor a 30 minutos. Por favor, selecciona otra hora.`);
+      mostrarAlertaModal("Conflicto de Agenda", `Ya existe otra cita activa en ese bloque de tiempo. Elige otra hora.`);
       return false;
     }
 
     return true;
   }
 
-  // ================= MANEJADOR DE CAMBIOS DE ESTADO =================
-  async function handleCambiarEstado(citaId, nuevoEstado) {
-    const citaExistente = citas.find(c => c.id === citaId);
-    if (!citaExistente) return;
-
-    if (nuevoEstado === 'Pospuesta') {
-      setCitaEnEdicion(citaExistente);
-      setFecha(citaExistente.fecha);
-      setHora(citaExistente.hora);
-      setMotivo(citaExistente.motivo);
-      
-      const encontrado = Object.keys(SERVICIOS_PREDETERMINADOS).find(
-        key => SERVICIOS_PREDETERMINADOS[key].nombre === citaExistente.servicio
-      );
-      if (encontrado) setServicioSeleccionado(encontrado);
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      alert("Modo de Reprogramación: Modifica la Fecha y Hora en el formulario de arriba para posponer la cita.");
-      return;
-    }
-
-    try {
-      const db = await configurarBD();
-      const citaActualizada = { ...citaExistente, estado: nuevoEstado };
-      await db.put("agenda", citaActualizada);
-      await cargarCitas();
-      alert(`Cita marcada como ${nuevoEstado} con éxito.`);
-    } catch (err) {
-      console.error("Error al actualizar estado:", err);
-    }
-  }
-
-  // ================= GUARDAR / ACTUALIZAR CITA =================
+  // ================= GUARDAR CITA E HISTORIAL =================
   async function handleSubmit(e) {
     e.preventDefault();
+    
     if (!fecha || !hora || !motivo) {
-      alert('Por favor completa la fecha, hora y motivo.');
+      mostrarAlertaModal('Campos Incompletos', 'Por favor completa la fecha, hora y motivo.');
       return;
     }
 
-    const idIgnorar = citaEnEdicion ? citaEnEdicion.id : null;
-    if (!validarHorarioYChoques(fecha, hora, idIgnorar)) return;
-
-    const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
-
     try {
-      if (citaEnEdicion) {
-        const citaActualizada = {
-          ...citaEnEdicion,
-          fecha,
-          hora,
+      if (!validarHorarioYChoques(fecha, hora)) return;
+
+      const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
+      let nuevaCita = {};
+
+      if (citaAEditar) {
+        try {
+          const requestDB = indexedDB.open("veterinariaDB"); 
+          requestDB.onsuccess = function(event) {
+            const db = event.target.result;
+            if(db.objectStoreNames.contains("citas")) {
+               const tx = db.transaction("citas", "readwrite");
+               tx.objectStore("citas").delete(citaAEditar.id);
+            }
+          };
+        } catch(e) {
+          console.log("Limpieza preventiva omitida");
+        }
+
+        nuevaCita = {
+          ...citaAEditar, 
+          fecha: fecha,
+          hora: hora,
           servicio: datosServicio.nombre,
           precio: datosServicio.precio,
-          motivo,
+          motivo: motivo,
           estado: 'Pospuesta',
+          notificadaComoNueva: false,
           notificadaComoPospuesta: false 
         };
-
-        await actualizarCitaAgenda(citaActualizada);
-        alert(`Su cita de ${mascota.nombre} ha sido reprogramada con éxito.`);
-        setCitaEnEdicion(null);
       } else {
-        const nuevaCita = {
-          id: Date.now(),
-          mascota: mascota.nombre,
-          mascotaId: mascota.id,
-          dueno: nombreUsuario,
-          correoDueno: correoUsuario,
+        const idUnico = Number(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
+        nuevaCita = {
+          id: idUnico,
+          mascota: mascota?.nombre || "Mascota",
+          mascotaId: mascota?.id || Date.now(),
+          dueno: nombreUsuario || "Cliente",
+          correoDueno: correoUsuario || "",
           telefono: telefonoUsuario || '1223-9075',
-          fecha,
-          hora,
+          fecha: fecha,
+          hora: hora,
           servicio: datosServicio.nombre,
           precio: datosServicio.precio,
-          motivo,
-          estado: 'Pendiente'
+          motivo: motivo,
+          estado: 'Pendiente',
+          notificadaComoNueva: false,
+          notificadaComoPospuesta: false
         };
-
-        await guardarCitaAgenda(nuevaCita);
-
-        const nuevoRegistroConsulta = {
-          idCita: nuevaCita.id,
-          pacienteId: mascota.id,
-          nombreMascota: mascota.nombre,
-          nombreDueno: nombreUsuario,
-          fecha: fecha,
-          diagnosticoMotivo: motivo,
-          treatmentServicio: nuevaCita.servicio, 
-          tratamientoServicio: nuevaCita.servicio,
-          costo: nuevaCita.precio
-        };
-        await guardarConsultaHistorial(nuevoRegistroConsulta);
-        alert(`¡Excelente! Cita para ${mascota.nombre} guardada con éxito.`);
       }
 
-      setFecha('');
-      setHora('');
-      setMotivo('');
-      await cargarCitas();
-    } catch (err) {
-      console.error("Error al procesar la cita:", err);
-    }
-  }
+      await guardarCitaAgenda(nuevaCita);
 
-  function cancelarEdicion() {
-    setCitaEnEdicion(null);
-    setFecha('');
-    setHora('');
-    setMotivo('');
+      const nuevoRegistroConsulta = {
+        idCita: nuevaCita.id,
+        pacienteId: nuevaCita.mascotaId,
+        nombreMascota: nuevaCita.mascota,
+        nombreDueno: nuevaCita.dueno,
+        fecha: fecha,
+        diagnosticoMotivo: motivo,
+        treatmentServicio: nuevaCita.servicio, 
+        tratamientoServicio: nuevaCita.servicio,
+        costo: nuevaCita.precio
+      };
+      await guardarConsultaHistorial(nuevoRegistroConsulta);
+      mostrarAlertaModal("¡Registro Guardado!", `La cita de ${nuevaCita.mascota} se procesó de forma correcta.`);
+      setTimeout(() => {
+        setModalAbierto(false);
+        navigate("/historial");
+      }, 2000);
+
+    } catch (err) {
+      console.error("Error crítico detectado:", err);
+      
+      if(err.name === "ConstraintError" || String(err).includes("exists")) {
+        try {
+          const idForzado = Number(`${Date.now()}${Math.floor(Math.random() * 9999)}`);
+          const citaForzada = {
+            id: idForzado,
+            mascota: citaAEditar ? citaAEditar.mascota : (mascota?.nombre || "Mascota"),
+            mascotaId: citaAEditar ? citaAEditar.mascotaId : (mascota?.id || Date.now()),
+            dueno: citaAEditar ? citaAEditar.dueno : (nombreUsuario || "Cliente"),
+            correoDueno: citaAEditar ? citaAEditar.correoDueno : (correoUsuario || ""),
+            telefono: citaAEditar ? citaAEditar.telefono : (telefonoUsuario || '1223-9075'),
+            fecha: fecha,
+            hora: hora,
+            servicio: SERVICIOS_PREDETERMINADOS[servicioSeleccionado].nombre,
+            precio: SERVICIOS_PREDETERMINADOS[servicioSeleccionado].precio,
+            motivo: motivo,
+            estado: 'Pospuesta',
+            notificadaComoNueva: false,
+            notificadaComoPospuesta: false
+          };
+          await guardarCitaAgenda(citaForzada);
+          mostrarAlertaModal("Cita Reprogramada", `Cita procesada con ID de respaldo: #${idForzado}`);
+          setTimeout(() => {
+            setModalAbierto(false);
+            navigate("/historial");
+          }, 2000);
+          return;
+        } catch (errorInterno) {
+          console.error("Error definitivo:", errorInterno);
+        }
+      }
+      mostrarAlertaModal("Error de Base de Datos", "No se pudo sincronizar la cita con IndexedDB.");
+    }
   }
 
   return (
     <div className="container mt-2">
+      <style>{`
+        .modal-emergente-fijo {
+          display: none;
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background-color: rgba(0, 0, 0, 0.55);
+          z-index: 99999;
+          justify-content: center;
+          align-items: center;
+        }
+        .modal-emergente-fijo.visible-open {
+          display: flex;
+        }
+        .modal-recuadro {
+          background: #ffffff;
+          padding: 24px;
+          border-radius: 8px;
+          max-width: 480px;
+          width: 90%;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .modal-titulo-seccion {
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px;
+        }
+        .modal-titulo-seccion h3 { margin: 0; font-size: 1.2rem; color: #1a202c; }
+        .modal-cerrar-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #718096; }
+        .modal-cuerpo-txt { font-size: 0.95rem; color: #4a5568; line-height: 1.5; margin-bottom: 20px; }
+        .modal-pie-seccion { display: flex; justify-content: flex-end; }
+      `}</style>
+
       <div className="d-flex j-cont-bet align-item mb-2">
         <h2 className="fs-1-75 fw-bold text-dark">Vista de administrador al realizar las citas</h2>
-        <button className="btn-outline-secondary btn-sm" onClick={() => navigate("/Dashboard-admin/gestion")}>
-          ← Volver a Gestión
+        <button className="btn-outline-secondary btn-sm" onClick={() => navigate("/citas")}>
+          ← Volver a Selección
         </button>
       </div>
 
-      {/* ================= DATOS DEL DUEÑO (CORREGIDO Y SEPARADO) ================= */}
+      {/* ================= DATOS DEL DUEÑO ================= */}
       <div className="card shadow-sm br-2 mb-2" style={{ borderTop: '4px solid #3a6073' }}>
         <div className="p-2 fw-bold text-primary" style={{ backgroundColor: '#eef3f5', borderBottom: '1px solid #ddd' }}>
           Datos del Dueño
@@ -250,21 +302,21 @@ export default function AgendarCita() {
           <div className="d-flex gap-4 f-wrap">
             <div style={{ flex: '1', minWidth: '150px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Nombre</div>
-              <div className="fw-bold text-dark fs-1-1">{nombreUsuario || "vilma"}</div>
+              <div className="fw-bold text-dark fs-1-1">{citaAEditar ? citaAEditar.dueno : (nombreUsuario || "vilma")}</div>
             </div>
             <div style={{ flex: '2', minWidth: '200px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Correo</div>
-              <div className="text-dark fs-1-1">{correoUsuario || "vilma@ues.edu.sv"}</div>
+              <div className="text-dark fs-1-1">{citaAEditar ? citaAEditar.correoDueno : (correoUsuario || "vilma@ues.edu.sv")}</div>
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Teléfono</div>
-              <div className="text-dark fs-1-1">{telefonoUsuario || "76948130"}</div>
+              <div className="text-dark fs-1-1">{citaAEditar ? citaAEditar.telefono : (telefonoUsuario || "76948130")}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= DATOS DE LA MASCOTA (CORREGIDO Y SEPARADO) ================= */}
+      {/* ================= DATOS DE LA MASCOTA ================= */}
       <div className="card shadow-sm br-2 mb-3" style={{ borderTop: '4px solid #3a6073' }}>
         <div className="p-2 fw-bold text-primary" style={{ backgroundColor: '#eef3f5', borderBottom: '1px solid #ddd' }}>
           Datos de la Mascota
@@ -273,7 +325,7 @@ export default function AgendarCita() {
           <div className="d-flex j-cont-bet f-wrap gap-2 mb-2 pb-1" style={{ borderBottom: '1px solid #eee' }}>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Nombre</div>
-              <div className="fw-bold text-accent fs-1-3">{mascota?.nombre || "Nina"}</div>
+              <div className="fw-bold text-accent fs-1-3">{citaAEditar ? citaAEditar.mascota : (mascota?.nombre || "Nina")}</div>
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Especie</div>
@@ -288,25 +340,6 @@ export default function AgendarCita() {
               <div className="text-dark">{mascota?.fechaRegistro ? new Date(mascota.fechaRegistro).toLocaleDateString("es-SV") : "12/6/2026"}</div>
             </div>
           </div>
-
-          <div className="d-flex j-cont-bet f-wrap gap-2">
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Raza</div>
-              <div className="text-dark fw-medium">{mascota?.raza || "Recogido"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Sexo</div>
-              <div className="text-dark">{mascota?.sexo || "Hembra"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Color / Pelaje</div>
-              <div className="text-dark">{mascota?.color || "Café"}</div>
-            </div>
-            <div style={{ flex: '1', minWidth: '120px' }}>
-              <div className="text-muted fs-0-8 fw-bold text-uppercase">Peso</div>
-              <div className="text-dark fw-bold">{mascota?.peso ? `${mascota.peso} kg` : "1 kg"}</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -315,13 +348,13 @@ export default function AgendarCita() {
         maxWidth: '650px', 
         margin: '0 auto', 
         backgroundColor: '#fdfdfd', 
-        border: citaEnEdicion ? '2px solid #f0ad4e' : '1px solid #e2e8f0' 
+        border: '1px solid #e2e8f0' 
       }}>
         <p className="text-accent fs-0-9 mb-2 fw-medium text-center">
-          {citaEnEdicion ? "MODO REPROGRAMACIÓN" : "Muestra los datos"}
+          {citaAEditar ? "Modifica los datos para Reprogramar la Cita" : "Muestra los datos"}
         </p>
         
-        <form onSubmit={handleSubmit}>
+        <form id="formulario-cita" onSubmit={handleSubmit}>
           <div className="form-group mb-1-5">
             <label className="label fw-bold text-secondary">Servicio de Clínica / Estética:</label>
             <select value={servicioSeleccionado} onChange={(e) => setServicioSeleccionado(e.target.value)} className="select">
@@ -347,29 +380,29 @@ export default function AgendarCita() {
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} className="textarea" placeholder="Detalles de la condición..." />
           </div>
 
-          <div className="d-flex gap-1">
-            <button type="submit" className={citaEnEdicion ? "btn-warning btn-block" : "btn-primary btn-block"}>
-              {citaEnEdicion ? 'Actualizar e Informar Cambio' : 'Guardar Cita e Historial'}
-            </button>
-            {citaEnEdicion && (
-              <button type="button" onClick={cancelarEdicion} className="btn-outline-secondary">
-                Cancelar
-              </button>
-            )}
-          </div>
+          <button type="submit" className="btn-primary btn-block">
+            {citaAEditar ? "Actualizar y Reprogramar Cita" : "Guardar Cita e Historial"}
+          </button>
         </form>
       </div>
 
-      {/* Listado inferior */}
-      {cargando ? (
-        <p className="text-muted">Cargando registros...</p>
-      ) : (
-        <ListaCitas 
-          citas={citas.filter(c => c.correoDueno === correoUsuario)} 
-          alCambiarEstado={handleCambiarEstado} 
-          cargarCitas={cargarCitas} 
-        />
-      )}
+      <div className={`modal-emergente-fijo ${modalAbierto ? 'visible-open' : ''}`}>
+        <div className="modal-recuadro">
+          <div className="modal-titulo-seccion">
+            <h3>{modalTitulo}</h3>
+            <button type="button" className="modal-cerrar-btn" onClick={() => setModalAbierto(false)}>×</button>
+          </div>
+          <div className="modal-cuerpo-txt">
+            <p style={{ whiteSpace: 'pre-line' }}>{modalMensaje}</p>
+          </div>
+          <div className="modal-pie-seccion">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setModalAbierto(false)}>
+              Entendido
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

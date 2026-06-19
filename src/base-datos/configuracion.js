@@ -1,6 +1,7 @@
 import { openDB } from "idb";
 
 const NOMBRE_BD = "VeterinariaDB";
+// Mantenemos estrictamente la versión 1 por requerimiento del proyecto
 const VERSION_BD = 1;
 
 export const configurarBD = async () => {
@@ -26,27 +27,20 @@ export const configurarBD = async () => {
       if (!db.objectStoreNames.contains("agenda"))
         db.createObjectStore("agenda", { keyPath: "id", autoIncrement: true });
 
-      //  Productos de Inventario 
+      // Productos de Inventario Iniciará vacío y limpio desde cero
       if (!db.objectStoreNames.contains("inventario")) {
-        const storeInven = db.createObjectStore("inventario", {
+        db.createObjectStore("inventario", {
           keyPath: "id",
           autoIncrement: true,
         });
-        storeInven.add({ id: 1, nombre: "Vacuna Antirrábica", precioVenta: 15.00 });
-        storeInven.add({ id: 2, nombre: "Desparasitante Oral", precioVenta: 8.50 });
-        storeInven.add({ id: 3, nombre: "Antibiótico Amoxicilina", precioVenta: 12.00 });
       }
       
-      //  Lotes PEPS (Ordenados por fecha)
+      // Lotes PEPS (Modificado: Iniciará vacío y limpio desde cero)
       if (!db.objectStoreNames.contains("lotes_peps")) {
-        const storeLotes = db.createObjectStore("lotes_peps", {
+        db.createObjectStore("lotes_peps", {
           keyPath: "id",
           autoIncrement: true,
         });
-        storeLotes.add({ id: 1, loteId: "LOTE-001", ingreso: "2026-01-10", cantidad: 3, productoNombre: "Vacuna Antirrábica" });
-        storeLotes.add({ id: 2, loteId: "LOTE-002", ingreso: "2026-02-15", cantidad: 8, productoNombre: "Vacuna Antirrábica" });
-        storeLotes.add({ id: 3, loteId: "LOTE-101", ingreso: "2026-03-01", cantidad: 4, productoNombre: "Desparasitante Oral" });
-        storeLotes.add({ id: 4, loteId: "LOTE-201", ingreso: "2026-02-20", cantidad: 15, productoNombre: "Antibiótico Amoxicilina" });
       }
 
       if (!db.objectStoreNames.contains("consultas"))
@@ -55,18 +49,13 @@ export const configurarBD = async () => {
           autoIncrement: true,
         });
 
-      // Inicializar almacén de Servicios Veterinarios 
+      
       if (!db.objectStoreNames.contains("servicios")) {
-        const storeServicios = db.createObjectStore("servicios", {
+         db.createObjectStore("servicios", {
           keyPath: "id",
           autoIncrement: true,
         });
-        // Inyección de servicios médicos iniciales para pruebas
-        storeServicios.add({ id: 1, nombre: "Consulta Médica General", categoria: "Medicina", precio: 15.00, disponible: true });
-        storeServicios.add({ id: 2, nombre: "Vacunación Antirrábica", categoria: "Prevención", precio: 20.00, disponible: true });
-        storeServicios.add({ id: 3, nombre: "Cirugía de Esterilización", categoria: "Quirúrgico", precio: 75.00, disponible: true });
-        storeServicios.add({ id: 4, nombre: "Profilaxis Dental", categoria: "Odontología", precio: 40.00, disponible: false });
-        storeServicios.add({ id: 5, nombre: "Baño y Peluquería Canina", categoria: "Estética", precio: 12.00, disponible: true });
+
       }
       // ────────────────────────────────────────────────────────────────────────────────
     },
@@ -115,31 +104,12 @@ export const eliminarPaciente = async (id) => {
 };
 
 
+
+
+
 // ============================================================================
-// FUNCIONES EXCLUSIVAS PARA EL MÓDULO DE INVENTARIO PEPS
+// NUEVAS FUNCIONES DE ENLACE: CONSULTAS Y AGENDA
 // ============================================================================
-export const obtenerProductosDB = async () => {
-  const db = await configurarBD();
-  return db.getAll("inventario");
-};
-
-export const obtenerLotesDB = async () => {
-  const db = await configurarBD();
-  return db.getAll("lotes_peps");
-};
-
-export const actualizarLoteDB = async (lote) => {
-  const db = await configurarBD();
-  return db.put("lotes_peps", lote);
-};
-
-export const eliminarLoteDB = async (id) => {
-  const db = await configurarBD();
-  return db.delete("lotes_peps", id);
-};
-
-
-
 export const guardarCitaAgenda = async (cita) => {
   const db = await configurarBD();
   return db.add("agenda", cita);
@@ -166,17 +136,27 @@ export const obtenerConsultasHistorial = async () => {
 };
 
 
-
-//  MÓDULO DE SERVICIOS
-
+// ============================================================================
+// NUEVAS FUNCIONES EXCLUSIVAS PARA EL MÓDULO DE SERVICIOS
+// ============================================================================
 export const obtenerServiciosDB = async () => {
   const db = await configurarBD();
   return db.getAll("servicios");
 };
 
 
+// ============================================================================
+// MÓDULO DE INVENTARIO (CORREGIDO PARA USAR ENLACE DINÁMICO .put())
+// ============================================================================
+export const obtenerProductosDB = async () => {
+  const db = await configurarBD();
+  return db.getAll("inventario");
+};
 
-//  CRUD COMPLETO Y LÓGICA DE AUDITORÍA PEPS
+export const obtenerLotesDB = async () => {
+  const db = await configurarBD();
+  return db.getAll("lotes_peps");
+};
 
 export const registrarProductoDB = async (producto) => {
   const db = await configurarBD();
@@ -193,13 +173,23 @@ export const eliminarProductoDB = async (id) => {
   return db.delete("inventario", id);
 };
 
-// --- CRUD  LOTES DEL INVENTARIO ---
+//inventario
 export const registrarLoteDB = async (lote) => {
   const db = await configurarBD();
-  return db.add("lotes_peps", lote);
+  return db.put("lotes_peps", lote);
 };
 
-// --- CRUD  SERVICIOS VETERINARIOS ---
+export const actualizarLoteDB = async (lote) => {
+  const db = await configurarBD();
+  return db.put("lotes_peps", lote);
+};
+
+export const eliminarLoteDB = async (id) => {
+  const db = await configurarBD();
+  return db.delete("lotes_peps", id);
+};
+
+
 export const registrarServicioDB = async (servicio) => {
   const db = await configurarBD();
   return db.add("servicios", servicio);
@@ -215,11 +205,8 @@ export const eliminarServicioDB = async (id) => {
   return db.delete("servicios", id);
 };
 
-// --- FUNCIÓN MATEMÁTICA: COMPROBACIÓN Y RECALCULACIÓN PEPS ---
-/**
- * Suma dinámicamente las cantidades de los lotes activos de un producto.
- * Permite auditar en tiempo real cómo impacta dar de baja el lote más antiguo (PEPS).
- */
+
+// Parte de Inventario: Cálculo matemático para auditar el Stock Total unificado
 export const calcularStockTotalPEPS = (lotesDelProducto) => {
   return lotesDelProducto.reduce((total, lote) => total + (parseInt(lote.cantidad) || 0), 0);
 };
