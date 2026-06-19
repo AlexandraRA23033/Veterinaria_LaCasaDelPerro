@@ -38,6 +38,21 @@ const Registro = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    //Filtro nombre: solo letras, acentos, eñes y espacios
+    if(name === 'nombre_completo'){
+      const reglaLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+      if(!reglaLetras.test(value)) return;
+    }
+    //Filtro telefono: solo nuemros y un único guion y no debe pasar de 8 numeros
+    if(name === 'telefono'){
+      const reglaTel = /^[0-9]*[-]?[0-9]*$/;
+      if(!reglaTel.test(value)) return;
+      //solo permite 8 digitos + 1 guion = 9 caracteres
+      if(value.length >9 )return;
+    }
+
+    //Si pasa los filtros, actualiza el useState
     setDatos({ ...datos, [name]: value });
     if (error) setError('');
     if (name === 'password') {
@@ -47,17 +62,19 @@ const Registro = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!datos.correo.endsWith('@.sv') && !datos.correo.endsWith('.com')) {
-      setError('Solo se permiten correos @sv o .com');
+    //inspeccion del correo .sv o .com
+    const correoLimpio = datos.correo.toLowerCase().trim();
+    if (!correoLimpio.endsWith('.sv') && !correoLimpio.endsWith('.com')) {
+      setError('Solo se permiten correos que terminen en .sv o .com');
       return;
     }
-    if (datos.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
+    // if (datos.password.length < 6) {
+    //   setError('La contraseña debe tener al menos 6 caracteres.');
+    //   return;
+    // }
     setCargando(true);
     try {
-      await crearUsuario(datos);
+      await crearUsuario({ ...datos, correo: correoLimpio});
       setExito(true);
       setTimeout(() =>  navigate('/ingresar'), 2000);
     } catch (err) {
@@ -109,6 +126,7 @@ const Registro = () => {
                       name="nombre_completo"
                       className="input"
                       placeholder="Ana García López"
+                      value={datos.nombre_completo} //enlace de control React
                       onChange={handleInputChange}
                       required
                     />
@@ -122,6 +140,7 @@ const Registro = () => {
                       name="correo"
                       className="input"
                       placeholder="ejemplo@ues.edu.sv"
+                      value={datos.correo} 
                       onChange={handleInputChange}
                       required
                     />
@@ -135,6 +154,7 @@ const Registro = () => {
                       name="telefono"
                       className="input"
                       placeholder="7000-0000"
+                      value={datos.telefono}
                       onChange={handleInputChange}
                       required
                     />
@@ -148,6 +168,7 @@ const Registro = () => {
                       name="password"
                       className="input"
                       placeholder="Mínimo 6 caracteres"
+                      value={datos.password}
                       onChange={handleInputChange}
                       required
                     />

@@ -67,6 +67,9 @@ function AppContent() {
   const mostrarSidebar =
     usuario && !rutasSinSidebar.includes(location.pathname);
 
+  //evalua si nos encontramos en la raiz de inicio
+  const estaEnInicio = location.pathname === "/";
+
   const goTo = (path) => {
     setSidebarOpen(false);
     setNavbarActive(false);
@@ -109,6 +112,38 @@ function AppContent() {
               Inicio
             </a>
           </li>
+          
+          {/**Seccion de accesos directos segun el rol (solo visibles en inicio) */}
+          {usuario && estaEnInicio && (
+            <>
+              {usuario.rol === "admin" ? (
+                <li>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goTo("/dashboard-admin");
+                    }}
+                  >
+                    Panel de Administración
+                  </a>
+                </li>
+              ) : (
+                <li>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goTo("/expedientes");
+                    }}
+                  >
+                    Expediente
+                  </a>
+                </li>
+              )}
+            </>
+          )}
+
           {!usuario ? (
             <>
               <li>

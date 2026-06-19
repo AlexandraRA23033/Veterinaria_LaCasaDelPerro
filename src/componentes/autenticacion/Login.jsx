@@ -12,15 +12,23 @@ const Login = () => {
   const [verPassword, setVerPassword] = useState(false);
 
   const handleChange = (e) => {
-    setDatos({ ...datos, [e.target.name]: e.target.value });
+    const {name, value} = e.target;
+    setDatos({ ...datos, [name]:value });
     if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const correoLimpio = datos.correo.toLowerCase().trim();
+    if(!correoLimpio.endsWith('.com') && !correoLimpio.endsWith('.sv')){
+      setError("Por favir, ingresa un correo válido que termine en .com o .sv");
+      return;
+    }
+
     setCargando(true);
     try {
-      const user = await loginUsuario(datos.correo, datos.password);
+      const user = await loginUsuario(correoLimpio, datos.password);
       login(user);
       navigate(user.rol === 'admin' ? '/dashboard-admin' : '/expedientes');
     } catch (err) {
@@ -66,6 +74,7 @@ const Login = () => {
                       name="correo"
                       className="input"
                       placeholder="ejemplo@ues.edu.sv"
+                      value={datos.correo}
                       onChange={handleChange}
                       required
                       autoComplete="email"
@@ -81,6 +90,7 @@ const Login = () => {
                         name="password"
                         className="input"
                         placeholder="••••••••"
+                        value={datos.password}
                         onChange={handleChange}
                         required
                         autoComplete="current-password"
