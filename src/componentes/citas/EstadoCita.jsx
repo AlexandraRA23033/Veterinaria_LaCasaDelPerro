@@ -6,7 +6,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
     const [procesando, setProcesando] = useState(false);
     const navigate = useNavigate(); // 🚀 Inicialización del navegador de rutas
 
-    const TOKEN = 'EAASPf8N8sxoBRqMzVQeFeSstq8mHT86DuCYGLTj5ERGPvD41BKBBcfZCcoMksgYwlgLcMfKXCJ2tHdWJzTZCtoPIZAjXehjAeNEDP2qEdZAdy2keCBM3k5kj8ZAvsG3CgZCGHbZA21UMHiBP7m6wJOi31Sp7cApWyn58l4xDODISn4xAZCHmuZAGDD0VHL0hNThQ7rM0jd7mbZCCW2SrmXfiTeuVnrmoB5lzb2mVddkMKCLHxZBmF1w75PEUR0F9sTZBi7w4tKuMONFp23HCLqRsFOfbPZBG4BQZDZD'; 
+    const TOKEN = 'EAASPf8N8sxoBR2dj0oOBVYZAtik4Tf1eEooyHTFZBJ6LiGqFQm7YMDlZAiT31mnLVraeyMKRrsHogE9alqlj32rsDl642aHLH69MJM9CBksghkYZA9vw53UAm6P4eMr1MlQynAVTvUbkcUj6oZCAHqbOxZAooMYZB4qtdaQsKAhcqer67Bqu3tZBqtKIEzJ2nZB7hjxX3glDtVPuWZAjgZAGnSwtRdVi6mctmPyMQibtZAEfu9dZA0ZBeWm13G3T90MZBxP5ChBuZC5kcT7zKJofadthiZA6EGY6s'; 
     const PHONE_ID = '1199483279910039'; 
     const TELEFONO_DESTINO = '50376948130'; 
 
