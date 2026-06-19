@@ -21,6 +21,11 @@ export default function AgendarCita() {
   const [servicioSeleccionado, setServicioSeleccionado] = useState('15'); 
   const [motivo, setMotivo] = useState('');
 
+  // Estados del Modal
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalTitulo, setModalTitulo] = useState('');
+  const [modalMensaje, setModalMensaje] = useState('');
+
   const hoy = new Date();
   const fechaMinima = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
@@ -40,14 +45,18 @@ export default function AgendarCita() {
     }
   }
 
+  function mostrarAlertaModal(titulo, mensaje) {
+    setModalTitulo(titulo);
+    setModalMensaje(mensaje);
+    setModalAbierto(true);
+  }
+
   useEffect(() => {
-    // Si viene una cita para editar (porque diste clic en Posponer) rellenamos los campos automáticamente
     if (citaAEditar) {
       setFecha(citaAEditar.fecha || '');
       setHora(citaAEditar.hora || '');
       setMotivo(citaAEditar.motivo || '');
       
-      // Buscar el id del servicio según el nombre
       const idServicio = Object.keys(SERVICIOS_PREDETERMINADOS).find(
         key => SERVICIOS_PREDETERMINADOS[key].nombre === citaAEditar.servicio
       );
@@ -57,8 +66,11 @@ export default function AgendarCita() {
 
   useEffect(() => {
     if (!mascota && !citaAEditar) {
-      alert("Por favor, selecciona una mascota desde la tabla de vista rápida primero.");
-      navigate("/citas");
+      mostrarAlertaModal("Atención", "Por favor, selecciona una mascota desde la tabla de vista rápida primero.");
+      setTimeout(() => {
+        setModalAbierto(false);
+        navigate("/citas");
+      }, 3000);
       return;
     }
     cargarCitas();
@@ -66,50 +78,46 @@ export default function AgendarCita() {
 
   // ================= MOTORES DE VALIDACIÓN DE HORARIOS =================
   function validarHorarioYChoques(fechaSel, horaSel) {
-    let [horas, minutos] = horaSel.split(':').map(Number);
+    if (!horaSel || !fechaSel) return false;
 
+    let [horas, minutos] = horaSel.split(':').map(Number);
     if (horas >= 1 && horas <= 4) {
       horas += 12;
     }
 
     const tiempoEnMinutos = horas * 60 + minutos;
-
     const [anioPart, mesPart, diaPart] = fechaSel.split('-').map(Number);
     const objetoFecha = new Date(Date.UTC(anioPart, mesPart - 1, diaPart, 12, 0, 0)); 
     const diaSemana = objetoFecha.getUTCDay(); 
 
     const recordatorioHorarios = 
-      "\n\n🕒 Horarios de atención en La Casa del Perro:\n" +
-      "• Lunes a Viernes:\n" +
-      "   - Mañana: 8:00 AM a 12:00 PM\n" +
-      "   - Tarde: 1:00 PM a 4:00 PM\n" +
-      "• Sábados:\n" +
-      "   - Jornada continua: 8:00 AM a 12:00 PM\n" +
-      "• Domingos: Cerrado todo el día.";
+      "\n\n🕒 Horarios de atención:\n" +
+      "• Lunes a Viernes: 8:00 AM - 12:00 PM y 1:00 PM - 4:00 PM\n" +
+      "• Sábados: 8:00 AM - 12:00 PM\n" +
+      "• Domingos: Cerrado.";
 
     if (diaSemana === 0) {
-      alert(`La Casa del Perro está cerrada los domingos. Por favor, selecciona otro día.${recordatorioHorarios}`);
+      mostrarAlertaModal("Clínica Cerrada", `La Casa del Perro está cerrada los domingos.${recordatorioHorarios}`);
       return false;
     }
 
     if (diaSemana >= 1 && diaSemana <= 5) {
       const turnoManana = tiempoEnMinutos >= 480 && tiempoEnMinutos <= 720; 
       const turnoTarde = tiempoEnMinutos >= 780 && tiempoEnMinutos <= 960;  
-      
       if (!turnoManana && !turnoTarde) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
         return false;
       }
-    } 
-    else if (diaSemana === 6) {
+    } else if (diaSemana === 6) {
       if (tiempoEnMinutos < 480 || tiempoEnMinutos > 720) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible para día Sábado.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible los Sábados.${recordatorioHorarios}`);
         return false;
       }
     }
 
     const DURACION_CITA = 30;
     const conflicto = citas.some((c) => {
+      if (!c || !c.hora || !c.fecha) return false; // 🛡️ Blindaje contra objetos corruptos de la DB
       if (c.id === citaAEditar?.id) return false; 
       if (c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
       
@@ -121,7 +129,7 @@ export default function AgendarCita() {
     });
 
     if (conflicto) {
-      alert(`Conflicto de agenda: Ya existe otra cita activa en ese mismo bloque de tiempo o interfiere con un margen menor a 30 minutos. Por favor, selecciona otra hora.`);
+      mostrarAlertaModal("Conflicto de Agenda", `Ya existe otra cita activa en ese bloque de tiempo. Elige otra hora.`);
       return false;
     }
 
@@ -133,34 +141,29 @@ export default function AgendarCita() {
     e.preventDefault();
     
     if (!fecha || !hora || !motivo) {
-      alert('Por favor completa la fecha, hora y motivo.');
+      mostrarAlertaModal('Campos Incompletos', 'Por favor completa la fecha, hora y motivo.');
       return;
     }
 
-    if (!validarHorarioYChoques(fecha, hora)) return;
-
-    const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
-
     try {
+      // 🛡️ Ahora la validación corre adentro del try-catch por seguridad total
+      if (!validarHorarioYChoques(fecha, hora)) return;
+
+      const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
       let nuevaCita = {};
 
       if (citaAEditar) {
-        // 🛠️ TRUCO MAESTRO: Si tu configuracion.js usa db.add(), reescribir la misma key dará error.
-        // Forzamos la limpieza eliminando el registro viejo abriendo una transacción rápida si es necesario,
-        // o en su defecto manejando un ID limpio si tu modelo lo requiere. Para no arriesgar tu ID primario,
-        // abrimos la base de datos para borrar la llave vieja antes de meter el "add" modificado:
         try {
-          const requestDB = indexedDB.open("veterinariaDB" || "ClnicaVeterinaria" || "miBaseDatos"); 
-          // Nota: Reemplaza "veterinariaDB" si tu base de datos de IndexedDB se llama diferente
+          const requestDB = indexedDB.open("veterinariaDB"); 
           requestDB.onsuccess = function(event) {
             const db = event.target.result;
             if(db.objectStoreNames.contains("citas")) {
                const tx = db.transaction("citas", "readwrite");
-               tx.objectStoreName?.delete ? tx.objectStore("citas").delete(citaAEditar.id) : null;
+               tx.objectStore("citas").delete(citaAEditar.id);
             }
           };
         } catch(e) {
-          console.log("Limpieza preventiva opcional ejecutada");
+          console.log("Limpieza preventiva omitida");
         }
 
         nuevaCita = {
@@ -175,7 +178,6 @@ export default function AgendarCita() {
           notificadaComoPospuesta: false 
         };
       } else {
-        // Para citas nuevas usamos marcas de tiempo de precisión absoluta aleatoria
         const idUnico = Number(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
         nuevaCita = {
           id: idUnico,
@@ -195,10 +197,8 @@ export default function AgendarCita() {
         };
       }
 
-      // Guardar en la agenda (IndexedDB)
       await guardarCitaAgenda(nuevaCita);
 
-      // Guardar/Actualizar en el historial médico (IndexedDB)
       const nuevoRegistroConsulta = {
         idCita: nuevaCita.id,
         pacienteId: nuevaCita.mascotaId,
@@ -212,11 +212,16 @@ export default function AgendarCita() {
       };
       await guardarConsultaHistorial(nuevoRegistroConsulta);
       
-      alert(`¡Excelente! Cita de ${nuevaCita.mascota} procesada correctamente.`);
-      navigate("/historial");
+      // ✅ SE DISPARA EL MODAL Y SE REDIRIGE CORRECTAMENTE AL TERMINAR EL TIMEOUT
+      mostrarAlertaModal("¡Registro Guardado!", `La cita de ${nuevaCita.mascota} se procesó de forma correcta.`);
+      setTimeout(() => {
+        setModalAbierto(false);
+        navigate("/historial");
+      }, 2000);
 
     } catch (err) {
-      // 🚨 Si falla por el add(), aplicamos el plan de contingencia definitivo: duplicar con ID nuevo para que guarde sí o sí
+      console.error("Error crítico detectado:", err);
+      
       if(err.name === "ConstraintError" || String(err).includes("exists")) {
         try {
           const idForzado = Number(`${Date.now()}${Math.floor(Math.random() * 9999)}`);
@@ -229,28 +234,62 @@ export default function AgendarCita() {
             telefono: citaAEditar ? citaAEditar.telefono : (telefonoUsuario || '1223-9075'),
             fecha: fecha,
             hora: hora,
-            servicio: datosServicio.nombre,
-            precio: datosServicio.precio,
+            servicio: SERVICIOS_PREDETERMINADOS[servicioSeleccionado].nombre,
+            precio: SERVICIOS_PREDETERMINADOS[servicioSeleccionado].precio,
             motivo: motivo,
             estado: 'Pospuesta',
             notificadaComoNueva: false,
             notificadaComoPospuesta: false
           };
           await guardarCitaAgenda(citaForzada);
-          alert(`¡Cita reprogramada con éxito! (Actualizado en sistema con referencia #${idForzado})`);
-          navigate("/historial");
+          mostrarAlertaModal("Cita Reprogramada", `Cita procesada con ID de respaldo: #${idForzado}`);
+          setTimeout(() => {
+            setModalAbierto(false);
+            navigate("/historial");
+          }, 2000);
           return;
         } catch (errorInterno) {
           console.error("Error definitivo:", errorInterno);
         }
       }
-      console.error("Error crítico al guardar la cita en IndexedDB:", err);
-      alert("No se pudo guardar en la Base de Datos. Revisa la consola del navegador.");
+      mostrarAlertaModal("Error de Base de Datos", "No se pudo sincronizar la cita con IndexedDB.");
     }
   }
 
   return (
     <div className="container mt-2">
+      {/* 🛠️ CAPA CSS EMBEBIDA PARA ASEGURAR QUE TU MODAL SE VEA SÍ O SÍ */}
+      <style>{`
+        .modal-emergente-fijo {
+          display: none;
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background-color: rgba(0, 0, 0, 0.55);
+          z-index: 99999;
+          justify-content: center;
+          align-items: center;
+        }
+        .modal-emergente-fijo.visible-open {
+          display: flex;
+        }
+        .modal-recuadro {
+          background: #ffffff;
+          padding: 24px;
+          border-radius: 8px;
+          max-width: 480px;
+          width: 90%;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .modal-titulo-seccion {
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px;
+        }
+        .modal-titulo-seccion h3 { margin: 0; font-size: 1.2rem; color: #1a202c; }
+        .modal-cerrar-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #718096; }
+        .modal-cuerpo-txt { font-size: 0.95rem; color: #4a5568; line-height: 1.5; margin-bottom: 20px; }
+        .modal-pie-seccion { display: flex; justify-content: flex-end; }
+      `}</style>
+
       <div className="d-flex j-cont-bet align-item mb-2">
         <h2 className="fs-1-75 fw-bold text-dark">Vista de administrador al realizar las citas</h2>
         <button className="btn-outline-secondary btn-sm" onClick={() => navigate("/citas")}>
@@ -350,6 +389,25 @@ export default function AgendarCita() {
           </button>
         </form>
       </div>
+
+      {/* ================= CONTENEDOR DEL MODAL INMUTABLE ================= */}
+      <div className={`modal-emergente-fijo ${modalAbierto ? 'visible-open' : ''}`}>
+        <div className="modal-recuadro">
+          <div className="modal-titulo-seccion">
+            <h3>{modalTitulo}</h3>
+            <button type="button" className="modal-cerrar-btn" onClick={() => setModalAbierto(false)}>×</button>
+          </div>
+          <div className="modal-cuerpo-txt">
+            <p style={{ whiteSpace: 'pre-line' }}>{modalMensaje}</p>
+          </div>
+          <div className="modal-pie-seccion">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setModalAbierto(false)}>
+              Entendido
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
