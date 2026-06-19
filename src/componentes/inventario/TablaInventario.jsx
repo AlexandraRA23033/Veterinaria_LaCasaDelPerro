@@ -12,85 +12,31 @@ const TablaInventario = ({ productos, lotes }) => {
   // Obtener fecha actual en formato YYYY-MM-DD para las validaciones de rango (Año actual 2026)
   const fechaHoy = new Date().toISOString().split('T')[0];
 
-  // Estado para el Producto (Izquierda)
+  // Estados de control para los formularios
   const [nuevoProd, setNuevoProd] = useState({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
-  
-  // Estado para el Lote (Derecha)
   const [nuevoLote, setNuevoLote] = useState({ id: null, loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
 
-  // Estado auxiliar para saber si estamos editando un lote específico directamente
-  const [editandoLoteDirecto, setEditandoLoteDirecto] = useState(false);
+  // Estados de Modo Operación
+  const [esEdicionProducto, setEsEdicionProducto] = useState(false);
+  const [esEdicionLote, setEsEdicionLote] = useState(false);
 
-  // Buscamos el nombre original antes de que el usuario lo edite en el input
+  // Determinar el nombre original del producto en edición
   const productoOriginal = productos.find(p => p.id === nuevoProd.id);
   const nombreOriginal = productoOriginal ? productoOriginal.nombre : '';
 
-  const handleCrearOEditarProducto = async (e) => {
-    e.preventDefault();
-    
-    if (parseFloat(nuevoProd.precioVenta) <= 0) {
-      alert("El precio de venta debe ser un número positivo.");
-      return;
-    }
-
-    const nuevoNombreNormalizado = nuevoProd.nombre.trim();
-
-    // Validar duplicados (Sólo si el nombre cambió)
-    if (nuevoNombreNormalizado.toLowerCase() !== nombreOriginal.toLowerCase()) {
-      const yaExiste = productos.some(p => 
-        p.nombre.trim().toLowerCase() === nuevoNombreNormalizado.toLowerCase()
-      );
-      if (yaExiste) {
-        alert(`Error: Ya existe un artículo registrado con el nombre "${nuevoProd.nombre}" en el catálogo del inventario.`);
-        return;
-      }
-    }
-
-    // REGLA: Si cambió el tipo de Accesorio a algo que requiera vencimiento, validar que los lotes existentes o el actual tengan fecha
-    if (nuevoProd.tipo !== "Accesorio" && nuevoProd.id) {
-      if (!nuevoLote.vencimiento || nuevoLote.vencimiento === "No requiere") {
-        alert(`Al cambiar el tipo a ${nuevoProd.tipo}, es obligatorio definir una Fecha de Vencimiento válida.`);
-        return;
-      }
-      if (nuevoLote.vencimiento < fechaHoy) {
-        alert("La fecha de vencimiento no puede ser del pasado.");
-        return;
-      }
-    }
-
-    const datosProducto = {
-      nombre: nuevoNombreNormalizado,
-      precioVenta: parseFloat(nuevoProd.precioVenta),
-      tipo: nuevoProd.tipo
-    };
-
-    const vencimientoFinalLote = nuevoProd.tipo === "Accesorio" ? "No requiere" : nuevoLote.vencimiento;
-
-    if (nuevoProd.id) {
-      // 1. Actualizar el producto en la base de datos
-      await actualizarProductoDB({ id: nuevoProd.id, ...datosProducto });
-
-      // 2. Actualizar cascada de lotes (Nombre y posible nueva fecha de vencimiento obligada)
-      const lotesAAsociar = lotes.filter(l => l.productoNombre === nombreOriginal);
-      for (const lote of lotesAAsociar) {
-        await registrarLoteDB({
-          ...lote,
-          productoNombre: nuevoNombreNormalizado,
-          vencimiento: lote.vencimiento === "No requiere" ? vencimientoFinalLote : lote.vencimiento
-        });
-      }
-    } else {
-      await registrarProductoDB(datosProducto);
-    }
-
-    // Al finalizar, reset completo y desaparición de datos del formulario
-    handleCancelarTodo();
-    window.location.reload();
+  // CANCELAR Y LIMPIAR TODO EL ESTADO (VUELVE A LA NORMALIDAD RÁPIDAMENTE)
+  const handleCancelarTodo = () => {
+    setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
+    setNuevoLote({ id: null, loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
+    setEsEdicionProducto(false);
+    setEsEdicionLote(false);
   };
 
-  // Al presionar editar en la tabla de productos
-  const handleSeleccionarEditar = (prod) => {
-    setEditandoLoteDirecto(false);
+  // AL SELECCIONAR EDITAR UN PRODUCTO (DESDE LA TABLA)
+  const handleSeleccionarEditarProducto = (prod) => {
+    setEsEdicionLote(false);
+    setEsEdicionProducto(true);
+
     setNuevoProd({
       id: prod.id,
       nombre: prod.nombre,
@@ -111,80 +57,159 @@ const TablaInventario = ({ productos, lotes }) => {
     });
   };
 
-  // SOLUCIÓN: Cargar los datos del lote seleccionado directamente en el formulario de la derecha
+  // AL SELECCIONAR EDITAR UN LOTE INDIVIDUAL (DESDE LA LÍNEA CRONOLÓGICA)
   const handleSeleccionarEditarLoteDirecto = (lote, tipoProducto) => {
-    setEditandoLoteDirecto(true);
-    // Limpiamos la sección producto para enfocarnos en el lote
-    setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: tipoProducto });
+    setEsEdicionProducto(false);
+    setEsEdicionLote(true);
+
+    // Mapeamos el tipo al formulario de producto para mantener la sincronía de validación
+    setNuevoProd({ id: null, nombre: lote.productoNombre, precioVenta: '', tipo: tipoProducto });
 
     setNuevoLote({
-      id: lote.id,
+      id: lote.id, // ID numérico de IndexedDB crucial para no duplicar
       loteId: lote.loteId,
       productoNombre: lote.productoNombre,
       ingreso: lote.ingreso,
-      vencimiento: lote.vencimiento,
+      vencimiento: lote.vencimiento === "No requiere" ? "" : lote.vencimiento,
       cantidad: lote.cantidad
     });
   };
 
-  const handleCancelarTodo = () => {
-    setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
-    setNuevoLote({ id: null, loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
-    setEditandoLoteDirecto(false);
-  };
+  // PROCESADOR ÚNICO DE ENVÍO / ACTUALIZACIÓN GENERAL (BOTÓN ÚNICO GLOBAL)
+  const handleGuardarCambiosFormulario = async (e) => {
+    if (e) e.preventDefault();
 
-  // Ejecuta la acción del formulario de la derecha (Crear Lote o Actualizar Lote Modificado)
-  const handleFormularioLoteDerecha = async (e) => {
-    e.preventDefault();
-    
-    if (parseInt(nuevoLote.cantidad) <= 0) {
-      alert("La cantidad debe ser mayor o igual a 1 unidad.");
-      return;
-    }
-
-    if (nuevoLote.ingreso < fechaHoy) {
-      alert("Error: La fecha de ingreso no puede ser anterior a hoy.");
-      return;
-    }
-
-    const esAccesorio = nuevoProd.tipo === "Accesorio";
-    if (!esAccesorio) {
-      if (!nuevoLote.vencimiento || nuevoLote.vencimiento === "No requiere") {
-        alert("La fecha de vencimiento es obligatoria para este tipo de producto.");
+    // CASO 1: ESTAMOS EN MODO EDICIÓN DE UN LOTE ESPECÍFICO
+    if (esEdicionLote && nuevoLote.id) {
+      if (parseInt(nuevoLote.cantidad) <= 0) {
+        alert("La cantidad debe ser mayor o igual a 1 unidad.");
         return;
       }
-      if (nuevoLote.vencimiento < fechaHoy) {
-        alert("Error: La fecha de vencimiento no puede ser menor a hoy.");
-        return;
+
+      if (nuevoProd.tipo !== "Accesorio") {
+        if (!nuevoLote.vencimiento) {
+          alert("La fecha de vencimiento es obligatoria.");
+          return;
+        }
+        if (nuevoLote.vencimiento < fechaHoy) {
+          alert("Error: La fecha de vencimiento no puede ser menor al día de hoy.");
+          return;
+        }
       }
-    }
 
-    const fechaVencimientoFinal = esAccesorio ? "No requiere" : nuevoLote.vencimiento;
+      const vencimientoFinal = nuevoProd.tipo === "Accesorio" ? "No requiere" : nuevoLote.vencimiento;
 
-    if (editandoLoteDirecto && nuevoLote.id) {
-      // Guardar cambios del lote editado
       await registrarLoteDB({
-        id: nuevoLote.id,
+        id: nuevoLote.id, 
         loteId: nuevoLote.loteId,
         ingreso: nuevoLote.ingreso,
-        vencimiento: fechaVencimientoFinal,
+        vencimiento: vencimientoFinal,
         cantidad: parseInt(nuevoLote.cantidad),
         productoNombre: nuevoLote.productoNombre
       });
-    } else {
-      // Registrar un lote nuevo desde cero
+
+    // CASO 2: ESTAMOS EN MODO EDICIÓN DE LA FICHA DE UN PRODUCTO
+    } else if (esEdicionProducto && nuevoProd.id) {
+      if (parseFloat(nuevoProd.precioVenta) <= 0) {
+        alert("El precio de venta debe ser un número positivo.");
+        return;
+      }
+
+      const nuevoNombreNormalizado = nuevoProd.nombre.trim();
+
+      if (nuevoNombreNormalizado.toLowerCase() !== nombreOriginal.toLowerCase()) {
+        const yaExiste = productos.some(p => p.nombre.trim().toLowerCase() === nuevoNombreNormalizado.toLowerCase());
+        if (yaExiste) {
+          alert(`Error: Ya existe un artículo con el nombre "${nuevoProd.nombre}".`);
+          return;
+        }
+      }
+
+      // CORRECCIÓN SOLICITADA: Si cambia a Accesorio, se fuerza "No requiere", si no, valida vencimiento cascada
+      let vencimientoCascada = "";
+      if (nuevoProd.tipo === "Accesorio") {
+        vencimientoCascada = "No requiere";
+      } else {
+        if (!nuevoLote.vencimiento || nuevoLote.vencimiento === "No requiere") {
+          alert("Al cambiar la clasificación, es obligatorio asignar una fecha de vencimiento para actualizar los lotes.");
+          return;
+        }
+        vencimientoCascada = nuevoLote.vencimiento;
+      }
+
+      // 1. Actualizar el producto base
+      await actualizarProductoDB({
+        id: nuevoProd.id,
+        nombre: nuevoNombreNormalizado,
+        precioVenta: parseFloat(nuevoProd.precioVenta),
+        tipo: nuevoProd.tipo
+      });
+
+      // 2. Mapear lotes y aplicar "No requiere" automáticamente si pasó a ser Accesorio
+      const lotesModificables = lotes.filter(l => l.productoNombre === nombreOriginal);
+      const promesasLotes = lotesModificables.map(lote => 
+        registrarLoteDB({
+          id: lote.id, 
+          loteId: lote.loteId,
+          cantidad: lote.cantidad,
+          ingreso: lote.ingreso,
+          productoNombre: nuevoNombreNormalizado,
+          // Si el producto mutó a Accesorio, limpiamos la fecha vieja sobreescribiendo con "No requiere"
+          vencimiento: nuevoProd.tipo === "Accesorio" ? "No requiere" : (lote.vencimiento === "No requiere" ? vencimientoCascada : lote.vencimiento)
+        })
+      );
+      
+      await Promise.all(promesasLotes);
+
+    // CASO 3: REGISTRO DE UN LOTE NUEVO DESDE CERO
+    } else if (nuevoLote.productoNombre) {
+      if (parseInt(nuevoLote.cantidad) <= 0) {
+        alert("La cantidad debe ser mayor o igual a 1 unidad.");
+        return;
+      }
+
+      const prodAsociado = productos.find(p => p.nombre === nuevoLote.productoNombre);
+      const tipoAsociado = prodAsociado ? prodAsociado.tipo : 'Medicamento';
+      const vencimientoNuevo = tipoAsociado === "Accesorio" ? "No requiere" : nuevoLote.vencimiento;
+
+      if (tipoAsociado !== "Accesorio" && (!nuevoLote.vencimiento || nuevoLote.vencimiento < fechaHoy)) {
+        alert("Asigna una fecha de vencimiento válida posterior o igual a hoy.");
+        return;
+      }
+
       const numeroSiguiente = lotes.length > 0 ? Math.max(...lotes.map(l => parseInt(l.loteId.replace('LOTE-', '')) || 0)) + 1 : 1;
       const loteIdAutomatico = `LOTE-${String(numeroSiguiente).padStart(3, '0')}`;
 
       await registrarLoteDB({
-        loteId: loteIdAutomatico, 
+        loteId: loteIdAutomatico,
         ingreso: nuevoLote.ingreso,
-        vencimiento: fechaVencimientoFinal,
+        vencimiento: vencimientoNuevo,
         cantidad: parseInt(nuevoLote.cantidad),
         productoNombre: nuevoLote.productoNombre
       });
+
+    // CASO 4: REGISTRO DE UN PRODUCTO NUEVO DESDE CERO
+    } else if (nuevoProd.nombre.trim()) {
+      if (parseFloat(nuevoProd.precioVenta) <= 0) {
+        alert("El precio debe ser positivo.");
+        return;
+      }
+      const yaExiste = productos.some(p => p.nombre.trim().toLowerCase() === nuevoProd.nombre.trim().toLowerCase());
+      if (yaExiste) {
+        alert("Este artículo ya existe en el catálogo.");
+        return;
+      }
+
+      await registrarProductoDB({
+        nombre: nuevoProd.nombre.trim(),
+        precioVenta: parseFloat(nuevoProd.precioVenta),
+        tipo: nuevoProd.tipo
+      });
+    } else {
+      alert("Por favor rellene los campos del formulario antes de procesar.");
+      return;
     }
-    
+
     handleCancelarTodo();
     window.location.reload();
   };
@@ -197,34 +222,32 @@ const TablaInventario = ({ productos, lotes }) => {
   };
 
   const handleBorrarLote = async (id) => {
-    if (confirm("¿Deseas dar de baja este lote de la auditoría PEPS?")) {
+    if (confirm("¿Deseas dar de baja este lote?")) {
       await eliminarLoteDB(id);
       window.location.reload();
     }
   };
 
-  const esModoEdicionProducto = nuevoProd.id !== null;
-  // REQUISITO: Habilitar de inmediato si el tipo seleccionado NO es Accesorio
-  const requiereVencimientoActual = nuevoProd.tipo !== "Accesorio";
+  const requiereVencimientoFiltro = nuevoProd.tipo !== "Accesorio";
 
   return (
     <div>
-      <div className="d-flex f-wrap gap-1 mb-3">
+      <div className="d-flex f-wrap gap-1 mb-2">
         {/* FORMULARIO PRODUCTO (IZQUIERDA) */}
-        <div className="card card-light shadow-sm br-1 f-1">
+        <div className="card card-light shadow-sm br-1 f-1" style={{ opacity: esEdicionLote ? 0.6 : 1 }}>
           <div className="card-header fw-bold text-primary">
-            {esModoEdicionProducto ? `Modificar Ficha (ID: ${nuevoProd.id})` : "Añadir Nuevo Insumo / Artículo"}
+            {esEdicionProducto ? `Modificar Ficha (ID: ${nuevoProd.id})` : "Añadir Nuevo Insumo / Artículo"}
           </div>
-          <form onSubmit={handleCrearOEditarProducto} className="card-body">
+          <div className="card-body">
             <div className="form-group mb-1">
               <label className="fw-bold">Nombre Técnico / Artículo:</label>
-              <input type="text" className="input" placeholder="Ej: Collar Antipulgas o Amoxicilina" 
-                value={nuevoProd.nombre} onChange={e => setNuevoProd({...nuevoProd, nombre: e.target.value})} required disabled={editandoLoteDirecto} />
+              <input type="text" className="input" placeholder="Ej: Collar Antipulgas" 
+                value={nuevoProd.nombre} onChange={e => setNuevoProd({...nuevoProd, nombre: e.target.value})} disabled={esEdicionLote} />
             </div>
             <div className="d-flex gap-1 mb-1">
               <div className="form-group f-1">
                 <label className="fw-bold">Clasificación / Tipo:</label>
-                <select className="input" value={nuevoProd.tipo} onChange={e => setNuevoProd({...nuevoProd, tipo: e.target.value})} disabled={editandoLoteDirecto}>
+                <select className="input" value={nuevoProd.tipo} onChange={e => setNuevoProd({...nuevoProd, tipo: e.target.value})} disabled={esEdicionLote}>
                   <option value="Medicamento">Medicamento</option>
                   <option value="Accesorio">Accesorio</option>
                   <option value="Alimento">Alimento</option>
@@ -234,29 +257,21 @@ const TablaInventario = ({ productos, lotes }) => {
               <div className="form-group f-1">
                 <label className="fw-bold">Precio Venta ($):</label>
                 <input type="number" step="0.01" min="0.01" className="input" placeholder="0.00"
-                  value={nuevoProd.precioVenta} onChange={e => setNuevoProd({...nuevoProd, precioVenta: e.target.value})} required disabled={editandoLoteDirecto} />
+                  value={nuevoProd.precioVenta} onChange={e => setNuevoProd({...nuevoProd, precioVenta: e.target.value})} disabled={esEdicionLote} />
               </div>
             </div>
-            <div className="d-flex gap-1 mt-1">
-              <button type="submit" className="btn btn-primary btn-sm f-1" disabled={editandoLoteDirecto}>
-                {esModoEdicionProducto ? "Actualizar Registro" : "Registrar Ficha"}
-              </button>
-              {(esModoEdicionProducto || editandoLoteDirecto) && (
-                <button type="button" onClick={handleCancelarTodo} className="btn btn-secondary btn-sm">Cancelar</button>
-              )}
-            </div>
-          </form>
+          </div>
         </div>
 
-        {/* FORMULARIO LOTE (DERECHA) - MANTIENE SU ESTRUCTURA ORIGINAL PERO RECIBE LOS DATOS DE EDICIÓN */}
-        <div className="card card-light shadow-sm br-1 f-1">
+        {/* FORMULARIO LOTE (DERECHA) */}
+        <div className="card card-light shadow-sm br-1 f-1" style={{ opacity: esEdicionProducto && !requiereVencimientoFiltro ? 0.6 : 1 }}>
           <div className="card-header fw-bold text-primary">
-            {editandoLoteDirecto ? `Corregir Parámetros de ${nuevoLote.loteId}` : "Ingresar Lote al Almacén (Cola PEPS)"}
+            {esEdicionLote ? `Corregir Parámetros de ${nuevoLote.loteId}` : "Ingresar Lote al Almacén (Cola PEPS)"}
           </div>
-          <form onSubmit={handleFormularioLoteDerecha} className="card-body">
+          <div className="card-body">
             <div className="form-group mb-1">
               <label className="fw-bold">Artículo del Catálogo:</label>
-              <select className="input" value={nuevoLote.productoNombre} onChange={e => setNuevoLote({...nuevoLote, productoNombre: e.target.value})} required disabled={esModoEdicionProducto || editandoLoteDirecto}>
+              <select className="input" value={nuevoLote.productoNombre} onChange={e => setNuevoLote({...nuevoLote, productoNombre: e.target.value})} disabled={esEdicionProducto || esEdicionLote}>
                 <option value="">-- Seleccionar --</option>
                 {productos.map(p => <option key={p.id} value={p.nombre}>{p.nombre} ({p.tipo})</option>)}
               </select>
@@ -269,33 +284,40 @@ const TablaInventario = ({ productos, lotes }) => {
                 className="input" 
                 value={nuevoLote.cantidad} 
                 onChange={e => setNuevoLote({...nuevoLote, cantidad: e.target.value})} 
-                required 
-                disabled={esModoEdicionProducto} 
-                style={esModoEdicionProducto ? { backgroundColor: '#e9ecef', color: '#495057', fontWeight: 'bold' } : {}}
+                disabled={esEdicionProducto} 
+                style={esEdicionProducto ? { backgroundColor: '#e9ecef', color: '#495057', fontWeight: 'bold' } : {}}
               />
             </div>
 
             <div className="d-flex gap-1 mb-1">
               <div className="form-group f-1">
                 <label className="fw-bold">Fecha de Ingreso:</label>
-                <input type="date" min={fechaHoy} className="input" value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} required disabled={esModoEdicionProducto} />
+                <input type="date" className="input" value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} disabled={esEdicionProducto} />
               </div>
               <div className="form-group f-1">
                 <label className="fw-bold">Vencimiento Médico:</label>
-                {/* REQUISITO: Si no requiere vencimiento se bloquea, pero si cambian a Medicamento se activa solo este input */}
-                {!requiereVencimientoActual && !editandoLoteDirecto ? (
+                {!requiereVencimientoFiltro && !esEdicionLote ? (
                   <input type="text" className="input" value="No requiere vencimiento" disabled style={{ backgroundColor: '#e9ecef', color: '#6c757d' }} />
                 ) : (
-                  <input type="date" min={fechaHoy} className="input" value={nuevoLote.vencimiento === "No requiere" ? "" : nuevoLote.vencimiento} onChange={e => setNuevoLote({...nuevoLote, vencimiento: e.target.value})} required={requiereVencimientoActual} />
+                  <input type="date" min={fechaHoy} className="input" value={nuevoLote.vencimiento} onChange={e => setNuevoLote({...nuevoLote, vencimiento: e.target.value})} />
                 )}
               </div>
             </div>
-            
-            <button type="submit" className="btn btn-secondary btn-sm w-100 mt-1" disabled={esModoEdicionProducto && !requiereVencimientoActual}>
-              {editandoLoteDirecto ? "Actualizar Parámetros del Lote" : esModoEdicionProducto ? "Actualizar Producto a la Izquierda" : "Acoplar a PEPS"}
-            </button>
-          </form>
+          </div>
         </div>
+      </div>
+
+      {/* BOTÓN ÚNICO GLOBAL E INTELIGENTE */}
+      <div className="card shadow-sm p-1 mb-3 bg-light br-1 d-flex gap-1">
+        <button type="button" onClick={handleGuardarCambiosFormulario} className="btn btn-primary fw-bold f-1" style={{ padding: '12px', fontSize: '15px' }}>
+          {esEdicionProducto ? "💾 Guardar Cambios del Producto" : 
+           esEdicionLote ? "💾 Guardar Cambios del Lote" : "➕ Registrar / Guardar Datos de Inventario"}
+        </button>
+        {(esEdicionProducto || esEdicionLote || nuevoProd.nombre || nuevoLote.productoNombre) && (
+          <button type="button" onClick={handleCancelarTodo} className="btn btn-secondary fw-bold" style={{ padding: '12px' }}>
+            Cancelar / Limpiar Formulario
+          </button>
+        )}
       </div>
 
       {/* TABLA PRINCIPAL */}
@@ -313,44 +335,36 @@ const TablaInventario = ({ productos, lotes }) => {
             </tr>
           </thead>
           <tbody>
-            {productos.length === 0 ? (
-              <tr><td colSpan="7" className="text-center text-muted p-2">No hay artículos cargados en el inventario desde cero.</td></tr>
-            ) : (
-              productos.map((prod, index) => {
-                const lotesDelProd = lotes.filter(l => l.productoNombre === prod.nombre);
-                const stock = calcularStockTotalPEPS(lotesDelProd);
-                const esCritico = stock <= 5;
-                const tipoElemento = prod.tipo || 'Medicamento';
+            {productos.map((prod, index) => {
+              const lotesDelProd = lotes.filter(l => l.productoNombre === prod.nombre);
+              const stock = calcularStockTotalPEPS(lotesDelProd);
+              const esCritico = stock <= 5;
+              const tipoElemento = prod.tipo || 'Medicamento';
 
-                return (
-                  <tr key={prod.id}>
-                    <td>{index + 1}</td>
-                    <td className="fw-bold">{prod.nombre}</td>
-                    <td><span className="badge info">{tipoElemento}</span></td>
-                    <td>${prod.precioVenta.toFixed(2)}</td>
-                    <td><span className={`badge ${stock > 0 ? "success" : "secondary"}`}>{stock} uds</span></td>
-                    <td>
-                      {esCritico ? (
-                        <span className="badge alert fw-bold">Falta {tipoElemento}</span>
-                      ) : (
-                        <span className="badge success">ÓPTIMO</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="d-flex gap-1">
-                        <button onClick={() => handleSeleccionarEditar(prod)} className="btn btn-secondary btn-xs">Editar</button>
-                        <button onClick={() => handleBorrarProducto(prod.id)} className="btn btn-alert btn-xs">Retirar</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+              return (
+                <tr key={prod.id} style={{ backgroundColor: nuevoProd.id === prod.id ? '#eef2ff' : 'transparent' }}>
+                  <td>{index + 1}</td>
+                  <td className="fw-bold">{prod.nombre}</td>
+                  <td><span className="badge info">{tipoElemento}</span></td>
+                  <td>${prod.precioVenta.toFixed(2)}</td>
+                  <td><span className={`badge ${stock > 0 ? "success" : "secondary"}`}>{stock} uds</span></td>
+                  <td>
+                    <span className={`badge ${esCritico ? "alert" : "success"}`}>{esCritico ? "CRÍTICO" : "ÓPTIMO"}</span>
+                  </td>
+                  <td>
+                    <div className="d-flex gap-1">
+                      <button onClick={() => handleSeleccionarEditarProducto(prod)} className="btn btn-secondary btn-xs" disabled={esEdicionLote || esEdicionProducto}>Editar</button>
+                      <button onClick={() => handleBorrarProducto(prod.id)} className="btn btn-alert btn-xs" disabled={esEdicionLote || esEdicionProducto}>Retirar</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* AUDITORÍA DE LOTES */}
+      {/* LINEA CRONOLÓGICA PEPS */}
       <div className="card card-light shadow-sm br-1">
         <div className="card-header fw-bold text-dark">Línea Cronológica PEPS (Vencimientos y Almacenamiento)</div>
         <div className="card-body">
@@ -379,9 +393,8 @@ const TablaInventario = ({ productos, lotes }) => {
                           <div className="fw-bold text-dark mt-1">Stock: {l.cantidad} uds</div>
                         </div>
                         <div className="d-flex f-col gap-1 ml-1 justify-center">
-                          {/* El botón ahora manda la info directo al formulario de la derecha */}
-                          <button onClick={() => handleSeleccionarEditarLoteDirecto(l, tipoProducto)} className="btn btn-secondary btn-xs" title="Modificar cantidad o fechas">✏️</button>
-                          <button onClick={() => handleBorrarLote(l.id)} className="btn btn-alert btn-xs">✕</button>
+                          <button onClick={() => handleSeleccionarEditarLoteDirecto(l, tipoProducto)} className="btn btn-secondary btn-xs" disabled={esEdicionProducto || esEdicionLote} title="Corregir este lote">✏️</button>
+                          <button onClick={() => handleBorrarLote(l.id)} className="btn btn-alert btn-xs" disabled={esEdicionProducto || esEdicionLote}>✕</button>
                         </div>
                       </div>
                     ))}
