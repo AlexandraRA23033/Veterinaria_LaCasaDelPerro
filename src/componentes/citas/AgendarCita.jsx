@@ -21,6 +21,10 @@ export default function AgendarCita() {
   const [servicioSeleccionado, setServicioSeleccionado] = useState('15'); 
   const [motivo, setMotivo] = useState('');
 
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalTitulo, setModalTitulo] = useState('');
+  const [modalMensaje, setModalMensaje] = useState('');
+
   const hoy = new Date();
   const fechaMinima = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
@@ -38,6 +42,13 @@ export default function AgendarCita() {
     } catch (err) {
       console.error("Error cargando citas de IndexedDB:", err);
     }
+  }
+
+// Función interna para disparar los modales en vez de alert()
+  function mostrarAlertaModal(titulo, mensaje) {
+    setModalTitulo(titulo);
+    setModalMensaje(mensaje);
+    setModalAbierto(true);
   }
 
   useEffect(() => {
@@ -88,7 +99,7 @@ export default function AgendarCita() {
       "• Domingos: Cerrado todo el día.";
 
     if (diaSemana === 0) {
-      alert(`La Casa del Perro está cerrada los domingos. Por favor, selecciona otro día.${recordatorioHorarios}`);
+      mostrarAlertaModal(`La Casa del Perro está cerrada los domingos. Por favor, selecciona otro día.${recordatorioHorarios}`);
       return false;
     }
 
@@ -97,13 +108,13 @@ export default function AgendarCita() {
       const turnoTarde = tiempoEnMinutos >= 780 && tiempoEnMinutos <= 960;  
       
       if (!turnoManana && !turnoTarde) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
+        mostrarAlertaModal(`El horario seleccionado (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
         return false;
       }
     } 
     else if (diaSemana === 6) {
       if (tiempoEnMinutos < 480 || tiempoEnMinutos > 720) {
-        alert(`El horario seleccionado (${horaSel}) no está disponible para día Sábado.${recordatorioHorarios}`);
+        mostrarAlertaModal(`El horario seleccionado (${horaSel}) no está disponible para día Sábado.${recordatorioHorarios}`);
         return false;
       }
     }
@@ -121,7 +132,7 @@ export default function AgendarCita() {
     });
 
     if (conflicto) {
-      alert(`Conflicto de agenda: Ya existe otra cita activa en ese mismo bloque de tiempo o interfiere con un margen menor a 30 minutos. Por favor, selecciona otra hora.`);
+      mostrarAlertaModal(`Conflicto de agenda: Ya existe otra cita activa en ese mismo bloque de tiempo o interfiere con un margen menor a 30 minutos. Por favor, selecciona otra hora.`);
       return false;
     }
 
@@ -133,7 +144,7 @@ export default function AgendarCita() {
     e.preventDefault();
     
     if (!fecha || !hora || !motivo) {
-      alert('Por favor completa la fecha, hora y motivo.');
+      mostrarAlertaModal('Por favor completa la fecha, hora y motivo.');
       return;
     }
 
@@ -145,10 +156,6 @@ export default function AgendarCita() {
       let nuevaCita = {};
 
       if (citaAEditar) {
-        // 🛠️ TRUCO MAESTRO: Si tu configuracion.js usa db.add(), reescribir la misma key dará error.
-        // Forzamos la limpieza eliminando el registro viejo abriendo una transacción rápida si es necesario,
-        // o en su defecto manejando un ID limpio si tu modelo lo requiere. Para no arriesgar tu ID primario,
-        // abrimos la base de datos para borrar la llave vieja antes de meter el "add" modificado:
         try {
           const requestDB = indexedDB.open("veterinariaDB" || "ClnicaVeterinaria" || "miBaseDatos"); 
           // Nota: Reemplaza "veterinariaDB" si tu base de datos de IndexedDB se llama diferente
@@ -212,8 +219,11 @@ export default function AgendarCita() {
       };
       await guardarConsultaHistorial(nuevoRegistroConsulta);
       
-      alert(`¡Excelente! Cita de ${nuevaCita.mascota} procesada correctamente.`);
-      navigate("/historial");
+      mostrarAlertaModal(`¡Excelente! Cita de ${nuevaCita.mascota} procesada correctamente.`);
+      setTimeout(() => {
+        setModalAbierto(false);
+        navigate("/historial");
+      }, 2500);
 
     } catch (err) {
       // 🚨 Si falla por el add(), aplicamos el plan de contingencia definitivo: duplicar con ID nuevo para que guarde sí o sí
@@ -237,15 +247,18 @@ export default function AgendarCita() {
             notificadaComoPospuesta: false
           };
           await guardarCitaAgenda(citaForzada);
-          alert(`¡Cita reprogramada con éxito! (Actualizado en sistema con referencia #${idForzado})`);
-          navigate("/historial");
+          mostrarAlertaModal(`¡Cita reprogramada con éxito! (Actualizado en sistema con referencia #${idForzado})`);
+          setTimeout(() => {
+            setModalAbierto(false);
+            navigate("/historial");
+          }, 2500);
           return;
         } catch (errorInterno) {
           console.error("Error definitivo:", errorInterno);
         }
       }
       console.error("Error crítico al guardar la cita en IndexedDB:", err);
-      alert("No se pudo guardar en la Base de Datos. Revisa la consola del navegador.");
+      mostrarAlertaModal("No se pudo guardar en la Base de Datos. Revisa la consola del navegador.");
     }
   }
 
@@ -350,6 +363,25 @@ export default function AgendarCita() {
           </button>
         </form>
       </div>
+      {/* ================= CONTAINER DEL MODAL DINÁMICO (LIBRERÍA PROPIA) ================= */}
+      <div className={`modal ${modalAbierto ? 'open' : ''}`} id="modalAlertaApp">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h3>{modalTitulo}</h3>
+            <button type="button" onClick={() => setModalAbierto(false)}>×</button>
+          </div>
+          <div className="modal-body">
+            <p style={{ whiteSpace: 'pre-line' }}>{modalMensaje}</p>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-sm btn-primary" onClick={() => setModalAbierto(false)}>
+              Entendido
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
+    
   );
 }
