@@ -21,6 +21,7 @@ export default function AgendarCita() {
   const [servicioSeleccionado, setServicioSeleccionado] = useState('15'); 
   const [motivo, setMotivo] = useState('');
 
+  // Estados del Modal
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modalTitulo, setModalTitulo] = useState('');
   const [modalMensaje, setModalMensaje] = useState('');
@@ -44,7 +45,6 @@ export default function AgendarCita() {
     }
   }
 
-// Función interna para disparar los modales en vez de alert()
   function mostrarAlertaModal(titulo, mensaje) {
     setModalTitulo(titulo);
     setModalMensaje(mensaje);
@@ -91,13 +91,13 @@ export default function AgendarCita() {
     const diaSemana = objetoFecha.getUTCDay(); 
 
     const recordatorioHorarios = 
-      "\n\n🕒 Horarios de atención:\n" +
+      "\n\nHorarios de atención:\n" +
       "• Lunes a Viernes: 8:00 AM - 12:00 PM y 1:00 PM - 4:00 PM\n" +
       "• Sábados: 8:00 AM - 12:00 PM\n" +
       "• Domingos: Cerrado.";
 
     if (diaSemana === 0) {
-      mostrarAlertaModal(`La Casa del Perro está cerrada los domingos. Por favor, selecciona otro día.${recordatorioHorarios}`);
+      mostrarAlertaModal("Clínica Cerrada", `La Casa del Perro está cerrada los domingos.${recordatorioHorarios}`);
       return false;
     }
 
@@ -105,19 +105,19 @@ export default function AgendarCita() {
       const turnoManana = tiempoEnMinutos >= 480 && tiempoEnMinutos <= 720; 
       const turnoTarde = tiempoEnMinutos >= 780 && tiempoEnMinutos <= 960;  
       if (!turnoManana && !turnoTarde) {
-        mostrarAlertaModal(`El horario seleccionado (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible de Lunes a Viernes.${recordatorioHorarios}`);
         return false;
       }
     } else if (diaSemana === 6) {
       if (tiempoEnMinutos < 480 || tiempoEnMinutos > 720) {
-        mostrarAlertaModal(`El horario seleccionado (${horaSel}) no está disponible para día Sábado.${recordatorioHorarios}`);
+        mostrarAlertaModal("Horario No Disponible", `El horario (${horaSel}) no está disponible los Sábados.${recordatorioHorarios}`);
         return false;
       }
     }
 
     const DURACION_CITA = 30;
     const conflicto = citas.some((c) => {
-      if (!c || !c.hora || !c.fecha) return false; // 🛡️ Blindaje contra objetos corruptos de la DB
+      if (!c || !c.hora || !c.fecha) return false;
       if (c.id === citaAEditar?.id) return false; 
       if (c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
       
@@ -129,7 +129,7 @@ export default function AgendarCita() {
     });
 
     if (conflicto) {
-      mostrarAlertaModal(`Conflicto de agenda: Ya existe otra cita activa en ese mismo bloque de tiempo o interfiere con un margen menor a 30 minutos. Por favor, selecciona otra hora.`);
+      mostrarAlertaModal("Conflicto de Agenda", `Ya existe otra cita activa en ese bloque de tiempo. Elige otra hora.`);
       return false;
     }
 
@@ -141,12 +141,11 @@ export default function AgendarCita() {
     e.preventDefault();
     
     if (!fecha || !hora || !motivo) {
-      mostrarAlertaModal('Por favor completa la fecha, hora y motivo.');
+      mostrarAlertaModal('Campos Incompletos', 'Por favor completa la fecha, hora y motivo.');
       return;
     }
 
     try {
-      // 🛡️ Ahora la validación corre adentro del try-catch por seguridad total
       if (!validarHorarioYChoques(fecha, hora)) return;
 
       const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
@@ -211,12 +210,11 @@ export default function AgendarCita() {
         costo: nuevaCita.precio
       };
       await guardarConsultaHistorial(nuevoRegistroConsulta);
-      
-      mostrarAlertaModal(`¡Excelente! Cita de ${nuevaCita.mascota} procesada correctamente.`);
+      mostrarAlertaModal("¡Registro Guardado!", `La cita de ${nuevaCita.mascota} se procesó de forma correcta.`);
       setTimeout(() => {
         setModalAbierto(false);
         navigate("/historial");
-      }, 2500);
+      }, 2000);
 
     } catch (err) {
       console.error("Error crítico detectado:", err);
@@ -241,24 +239,22 @@ export default function AgendarCita() {
             notificadaComoPospuesta: false
           };
           await guardarCitaAgenda(citaForzada);
-          mostrarAlertaModal(`¡Cita reprogramada con éxito! (Actualizado en sistema con referencia #${idForzado})`);
+          mostrarAlertaModal("Cita Reprogramada", `Cita procesada con ID de respaldo: #${idForzado}`);
           setTimeout(() => {
             setModalAbierto(false);
             navigate("/historial");
-          }, 2500);
+          }, 2000);
           return;
         } catch (errorInterno) {
           console.error("Error definitivo:", errorInterno);
         }
       }
-      console.error("Error crítico al guardar la cita en IndexedDB:", err);
-      mostrarAlertaModal("No se pudo guardar en la Base de Datos. Revisa la consola del navegador.");
+      mostrarAlertaModal("Error de Base de Datos", "No se pudo sincronizar la cita con IndexedDB.");
     }
   }
 
   return (
     <div className="container mt-2">
-      {/* 🛠️ CAPA CSS EMBEBIDA PARA ASEGURAR QUE TU MODAL SE VEA SÍ O SÍ */}
       <style>{`
         .modal-emergente-fijo {
           display: none;
@@ -389,18 +385,18 @@ export default function AgendarCita() {
           </button>
         </form>
       </div>
-      {/* ================= CONTAINER DEL MODAL DINÁMICO (LIBRERÍA PROPIA) ================= */}
-      <div className={`modal ${modalAbierto ? 'open' : ''}`} id="modalAlertaApp">
-        <div className="modal-content">
-          <div className="modal-header">
+
+      <div className={`modal-emergente-fijo ${modalAbierto ? 'visible-open' : ''}`}>
+        <div className="modal-recuadro">
+          <div className="modal-titulo-seccion">
             <h3>{modalTitulo}</h3>
-            <button type="button" onClick={() => setModalAbierto(false)}>×</button>
+            <button type="button" className="modal-cerrar-btn" onClick={() => setModalAbierto(false)}>×</button>
           </div>
-          <div className="modal-body">
+          <div className="modal-cuerpo-txt">
             <p style={{ whiteSpace: 'pre-line' }}>{modalMensaje}</p>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setModalAbierto(false)}>
+          <div className="modal-pie-seccion">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setModalAbierto(false)}>
               Entendido
             </button>
           </div>
@@ -408,6 +404,5 @@ export default function AgendarCita() {
       </div>
 
     </div>
-    
   );
 }
