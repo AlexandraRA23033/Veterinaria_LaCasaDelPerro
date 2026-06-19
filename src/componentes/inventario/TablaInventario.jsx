@@ -9,18 +9,18 @@ import {
 } from '../../base-datos/configuracion';
 
 const TablaInventario = ({ productos, lotes }) => {
-  // Obtener fecha actual en formato YYYY-MM-DD para la validación min de vencimientos
+  // Obtener fecha actual en formato YYYY-MM-DD para las validaciones de rango (Año actual 2026)
   const fechaHoy = new Date().toISOString().split('T')[0];
 
   // Estado para el Producto (Añadido el campo 'tipo')
   const [nuevoProd, setNuevoProd] = useState({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
   
-  // Estado para el Lote (Añadido el campo 'vencimiento' e 'ingreso')
+  // Estado para el Lote (Inicializado con fecha de ingreso de hoy)
   const [nuevoLote, setNuevoLote] = useState({ loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
 
   const handleCrearOEditarProducto = async (e) => {
     e.preventDefault();
-    // Validación adicional de seguridad para precios negativos
+    
     if (parseFloat(nuevoProd.precioVenta) <= 0) {
       alert("El precio de venta debe ser un número positivo.");
       return;
@@ -38,42 +38,75 @@ const TablaInventario = ({ productos, lotes }) => {
       await registrarProductoDB(datosProducto);
     }
 
+    // Limpieza total y reseteo
     setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
+    setNuevoLote({ loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
     window.location.reload();
   };
 
+  // REQUERIMIENTO: Al editar, posiciona los datos en ambos formularios de manera sincronizada
   const handleSeleccionarEditar = (prod) => {
+    // 1. Posiciona en Formulario de Producto (Izquierda)
     setNuevoProd({
       id: prod.id,
       nombre: prod.nombre,
       precioVenta: prod.precioVenta,
       tipo: prod.tipo || 'Medicamento'
     });
+
+    // 2. Posiciona en Formulario de Lotes (Derecha) para evitar distorsión de la cola PEPS
+    setNuevoLote(prev => ({
+      ...prev,
+      productoNombre: prod.nombre
+    }));
   };
 
   const handleCancelarEdicion = () => {
     setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
+    setNuevoLote({ loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
   };
 
   const handleCrearLote = async (e) => {
     e.preventDefault();
+    
     if (parseInt(nuevoLote.cantidad) <= 0) {
       alert("La cantidad inicial debe ser mayor o igual a 1 unidad.");
       return;
     }
-    // Validación manual de fecha de vencimiento por si el navegador no soporta el atributo min
-    if (nuevoLote.vencimiento < fechaHoy) {
-      alert("Error: No se pueden registrar lotes con fechas de vencimiento anteriores a la fecha de hoy.");
+
+    // VALIDACIÓN: Fecha de ingreso no puede ser posterior al día de hoy (futuro)
+    if (nuevoLote.ingreso > fechaHoy) {
+      alert("Error: La fecha de ingreso no puede ser una fecha futura.");
       return;
     }
+
+    // Detectar el tipo del producto seleccionado para aplicar la regla de vencimiento
+    const productoAsociado = productos.find(p => p.nombre === nuevoLote.productoNombre);
+    const tipoProducto = productoAsociado ? productoAsociado.tipo : 'Medicamento';
+
+    // REQUERIMIENTO: Validar vencimiento solo para Medicamento, Alimento e Higiene
+    if (tipoProducto !== "Accesorio") {
+      if (!nuevoLote.vencimiento) {
+        alert(`El campo de fecha de vencimiento es obligatorio para la categoría: ${tipoProducto}.`);
+        return;
+      }
+      if (nuevoLote.vencimiento < fechaHoy) {
+        alert("Error: No se pueden registrar lotes vencidos o con fechas anteriores a hoy.");
+        return;
+      }
+    }
+
+    // SOLUCIÓN AL ERROR: Asignamos el valor final directamente en una constante según el tipo
+    const fechaVencimientoFinal = tipoProducto === "Accesorio" ? "No requiere" : nuevoLote.vencimiento;
 
     await registrarLoteDB({
       loteId: nuevoLote.loteId,
       ingreso: nuevoLote.ingreso,
-      vencimiento: nuevoLote.vencimiento,
+      vencimiento: fechaVencimientoFinal,
       cantidad: parseInt(nuevoLote.cantidad),
       productoNombre: nuevoLote.productoNombre
     });
+    
     window.location.reload();
   };
 
@@ -91,10 +124,14 @@ const TablaInventario = ({ productos, lotes }) => {
     }
   };
 
+  // Auxiliar para saber dinámicamente qué tipo de producto está seleccionado en la sección de lotes
+  const productoSeleccionadoEnLotes = productos.find(p => p.nombre === nuevoLote.productoNombre);
+  const esAccesorioSeleccionado = productoSeleccionadoEnLotes?.tipo === "Accesorio";
+
   return (
     <div>
       <div className="d-flex f-wrap gap-1 mb-3">
-        {/* FORMULARIO PRODUCTO: MEDICAMENTO O ACCESORIO */}
+        {/* FORMULARIO PRODUCTO */}
         <div className="card card-light shadow-sm br-1 f-1">
           <div className="card-header fw-bold text-primary">
             {nuevoProd.id ? `Modificar Ficha (ID: ${nuevoProd.id})` : "Añadir Nuevo Insumo / Artículo"}
@@ -132,7 +169,7 @@ const TablaInventario = ({ productos, lotes }) => {
           </form>
         </div>
 
-        {/* FORMULARIO LOTE: VALIDACIONES CONTROLADAS */}
+        {/* FORMULARIO LOTE */}
         <div className="card card-light shadow-sm br-1 f-1">
           <div className="card-header fw-bold text-primary">Ingresar Lote al Almacén (Cola PEPS)</div>
           <form onSubmit={handleCrearLote} className="card-body">
@@ -156,12 +193,16 @@ const TablaInventario = ({ productos, lotes }) => {
             <div className="d-flex gap-1 mb-1">
               <div className="form-group f-1">
                 <label className="fw-bold">Fecha de Ingreso:</label>
-                <input type="date" className="input" value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} required />
+                <input type="date" max={fechaHoy} className="input" value={nuevoLote.ingreso} onChange={e => setNuevoLote({...nuevoLote, ingreso: e.target.value})} required />
               </div>
               <div className="form-group f-1">
                 <label className="fw-bold">Vencimiento Médico:</label>
-                {/* min={fechaHoy} bloquea visualmente las fechas anteriores en el calendario del navegador */}
-                <input type="date" min={fechaHoy} className="input" value={nuevoLote.vencimiento} onChange={e => setNuevoLote({...nuevoLote, vencimiento: e.target.value})} required />
+                {/* Condicional para Accesorios */}
+                {esAccesorioSeleccionado ? (
+                  <input type="text" className="input" value="No requiere vencimiento" disabled style={{ backgroundColor: '#e9ecef', color: '#6c757d' }} />
+                ) : (
+                  <input type="date" min={fechaHoy} className="input" value={nuevoLote.vencimiento} onChange={e => setNuevoLote({...nuevoLote, vencimiento: e.target.value})} required />
+                )}
               </div>
             </div>
             <button type="submit" className="btn btn-secondary btn-sm w-100 mt-1">Acoplar a PEPS</button>
@@ -214,7 +255,7 @@ const TablaInventario = ({ productos, lotes }) => {
         </table>
       </div>
 
-      {/* DETALLES DE LOTES Y AUDITORÍA PEPS */}
+      {/* AUDITORÍA DE LOTES */}
       <div className="card card-light shadow-sm br-1">
         <div className="card-header fw-bold text-dark">Línea Cronológica PEPS (Vencimientos y Almacenamiento)</div>
         <div className="card-body">
@@ -232,7 +273,9 @@ const TablaInventario = ({ productos, lotes }) => {
                         <div>
                           <div className="text-secondary fw-bold">ID: {l.loteId}</div>
                           <div className="text-muted fs-sm">Ingresó: {l.ingreso}</div>
-                          <div className="text-alert fw-bold fs-sm">Vence: {l.vencimiento}</div>
+                          <div className={`${l.vencimiento === 'No requiere' ? 'text-muted' : 'text-alert'} fw-bold fs-sm`}>
+                            Vence: {l.vencimiento}
+                          </div>
                           <div className="fw-bold text-dark mt-1">Stock: {l.cantidad} uds</div>
                         </div>
                         <button onClick={() => handleBorrarLote(l.id)} className="btn btn-alert btn-xs ml-1">✕</button>
