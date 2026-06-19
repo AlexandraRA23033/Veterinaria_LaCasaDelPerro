@@ -91,7 +91,7 @@ export default function AgendarCita() {
     const diaSemana = objetoFecha.getUTCDay(); 
 
     const recordatorioHorarios = 
-      "\n\n🕒 Horarios de atención:\n" +
+      "\n\nHorarios de atención:\n" +
       "• Lunes a Viernes: 8:00 AM - 12:00 PM y 1:00 PM - 4:00 PM\n" +
       "• Sábados: 8:00 AM - 12:00 PM\n" +
       "• Domingos: Cerrado.";
@@ -117,7 +117,7 @@ export default function AgendarCita() {
 
     const DURACION_CITA = 30;
     const conflicto = citas.some((c) => {
-      if (!c || !c.hora || !c.fecha) return false; // 🛡️ Blindaje contra objetos corruptos de la DB
+      if (!c || !c.hora || !c.fecha) return false;
       if (c.id === citaAEditar?.id) return false; 
       if (c.fecha !== fechaSel || c.estado === 'Cancelada') return false;
       
@@ -146,7 +146,6 @@ export default function AgendarCita() {
     }
 
     try {
-      // 🛡️ Ahora la validación corre adentro del try-catch por seguridad total
       if (!validarHorarioYChoques(fecha, hora)) return;
 
       const datosServicio = SERVICIOS_PREDETERMINADOS[servicioSeleccionado];
@@ -211,8 +210,6 @@ export default function AgendarCita() {
         costo: nuevaCita.precio
       };
       await guardarConsultaHistorial(nuevoRegistroConsulta);
-      
-      // ✅ SE DISPARA EL MODAL Y SE REDIRIGE CORRECTAMENTE AL TERMINAR EL TIMEOUT
       mostrarAlertaModal("¡Registro Guardado!", `La cita de ${nuevaCita.mascota} se procesó de forma correcta.`);
       setTimeout(() => {
         setModalAbierto(false);
@@ -258,7 +255,6 @@ export default function AgendarCita() {
 
   return (
     <div className="container mt-2">
-      {/* 🛠️ CAPA CSS EMBEBIDA PARA ASEGURAR QUE TU MODAL SE VEA SÍ O SÍ */}
       <style>{`
         .modal-emergente-fijo {
           display: none;
@@ -390,7 +386,6 @@ export default function AgendarCita() {
         </form>
       </div>
 
-      {/* ================= CONTENEDOR DEL MODAL INMUTABLE ================= */}
       <div className={`modal-emergente-fijo ${modalAbierto ? 'visible-open' : ''}`}>
         <div className="modal-recuadro">
           <div className="modal-titulo-seccion">

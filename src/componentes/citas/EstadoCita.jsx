@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 🚀 Importación necesaria para redirigir
+import { useNavigate } from "react-router-dom"; 
 import { configurarBD } from "../../base-datos/configuracion";
 
 const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
     const [procesando, setProcesando] = useState(false);
     const navigate = useNavigate(); // 🚀 Inicialización del navegador de rutas
+    
+    // ➕ AGREGAR ESTO:
+    const [modalAbierto, setModalAbierto] = useState(false);
+    const [modalTitulo, setModalTitulo] = useState('');
+    const [modalMensaje, setModalMensaje] = useState('');
+
+    // Función auxiliar para abrir el modal cómodamente
+    const mostrarModal = (titulo, mensaje) => {
+        setModalTitulo(titulo);
+        setModalMensaje(mensaje);
+        setModalAbierto(true);
+    };
 
     const TOKEN = 'EAASPf8N8sxoBR2dj0oOBVYZAtik4Tf1eEooyHTFZBJ6LiGqFQm7YMDlZAiT31mnLVraeyMKRrsHogE9alqlj32rsDl642aHLH69MJM9CBksghkYZA9vw53UAm6P4eMr1MlQynAVTvUbkcUj6oZCAHqbOxZAooMYZB4qtdaQsKAhcqer67Bqu3tZBqtKIEzJ2nZB7hjxX3glDtVPuWZAjgZAGnSwtRdVi6mctmPyMQibtZAEfu9dZA0ZBeWm13G3T90MZBxP5ChBuZC5kcT7zKJofadthiZA6EGY6s'; 
     const PHONE_ID = '1199483279910039'; 
@@ -67,7 +79,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
             const exitoTexto = await enviarWhatsAppMeta(payloadTexto);
             
             if (exitoTexto) {
-                alert(`¡Cliente notificado por WhatsApp con el formato: "el día ${fechaFormateada} a la hora ${horaFormateada}"!`);
+                mostrarModal("Notificación Exitosa", `¡Cliente notificado por WhatsApp con el formato: "el día ${fechaFormateada} a la hora ${horaFormateada}"!`);
                 
                 try {
                     const db = await configurarBD();
@@ -82,7 +94,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
                 }
             }
         } else {
-            alert(`Hubo un problema con los servidores de Meta o el Token.`);
+            mostrarModal("Error de Conexión", "Hubo un problema con los servidores de Meta o el Token.");
         }
         setProcesando(false);
     };
@@ -99,12 +111,11 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
                     notificadaComoPospuesta: false 
                 });
                 
-                alert("Redirigiendo al formulario para reprogramar la información de la cita...");
-                
-                // 🚀 REDIRECCIÓN ENTRE RUTAS: Nos lleva a AgendarCita pasándole la info actual para rellenar
-                // Nota: Asegúrate de que "/agendar-cita" coincide exactamente con el path configurado en tu App.jsx para ese componente.
-                navigate("/citas", { state: { citaAEditar: cita } });
-
+                mostrarModal("Reprogramación", "Redirigiendo al formulario para reprogramar la información de la cita...");
+                setTimeout(() => {
+                    setModalAbierto(false);
+                    navigate("/citas", { state: { citaAEditar: cita } });
+                }, 2000);
                 alCambiarEstado(cita.id, 'Pospuesta');
                 await cargarCitas();
             } catch (e) {
@@ -130,22 +141,20 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
         };
 
         const exito = await enviarWhatsAppMeta(payloadTexto);
-        if (exito) {
-            alert(`Estado actualizado a "${nuevoEstado}" y cliente notificado.`);
-            alCambiarEstado(cita.id, nuevoEstado);
-        } else {
-            alert("El estado se cambió localmente, pero no se pudo enviar la notificación de cambio.");
-            alCambiarEstado(cita.id, nuevoEstado);
-        }
-        setProcesando(false);
-    };
 
-    if (cita.estado === 'Completada' || cita.estado === 'Cancelada') {
-        return <span className="badge secondary text-muted fs-0-75">Atención Finalizada</span>;
-    }
+        if (exito) {
+            mostrarModal("Estado Actualizado", `Estado actualizado a "${nuevoEstado}" y cliente notificado.`);
+        } else {
+            mostrarModal("Actualización Local", "El estado se cambió localmente, pero no se pudo enviar la notificación por WhatsApp.");
+        }
+        if (alCambiarEstado) alCambiarEstado(cita.id, nuevoEstado);
+        };
+
+        if (cita.estado === 'Completada' || cita.estado === 'Cancelada') {
+            return <span className="badge secondary text-muted fs-0-75">Atención Finalizada</span>;
+        }
 
     const yaNotificado = cita.estado === 'Pospuesta' ? cita.notificadaComoPospuesta : cita.notificadaComoNueva;
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
           
@@ -182,6 +191,22 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
                 Cancelar
             </button>
           </div>
+        <div className={`modal ${modalAbierto ? 'is-open' : ''}`}>
+            <div className="modal-content" style={{ padding: '20px', maxWidth: '400px', margin: 'auto', background: '#fff', borderRadius: '8px' }}>
+                <div className="modal-header d-flex j-cont-bet align-item mb-1" style={{ borderBottom: '1px solid #eee', paddingBottom: '5px' }}>
+                    <h4 className="fw-bold text-dark">{modalTitulo}</h4>
+                    <button className="btn-close" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => setModalAbierto(false)}>×</button>
+                </div>
+                <div className="modal-body mb-2">
+                    <p className="text-secondary fs-0-95">{modalMensaje}</p>
+                </div>
+                <div className="modal-footer d-flex j-cont-end">
+                    <button className="btn-primary btn-sm" onClick={() => setModalAbierto(false)}>
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
         </div>
     );
 };
