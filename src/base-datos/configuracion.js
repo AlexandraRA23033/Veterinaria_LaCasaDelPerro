@@ -104,29 +104,7 @@ export const eliminarPaciente = async (id) => {
 };
 
 
-// Parte de Inventario: Obtener catálogo de productos
-export const obtenerProductosDB = async () => {
-  const db = await configurarBD();
-  return db.getAll("inventario");
-};
 
-// Parte de Inventario: Obtener lista de lotes activos
-export const obtenerLotesDB = async () => {
-  const db = await configurarBD();
-  return db.getAll("lotes_peps");
-};
-
-// Parte de Inventario: Actualizar stock o datos de un lote
-export const actualizarLoteDB = async (lote) => {
-  const db = await configurarBD();
-  return db.put("lotes_peps", lote);
-};
-
-// Parte de Inventario: Eliminar o dar de baja un lote (Salidas)
-export const eliminarLoteDB = async (id) => {
-  const db = await configurarBD();
-  return db.delete("lotes_peps", id);
-};
 
 
 // ============================================================================
@@ -159,7 +137,7 @@ export const obtenerConsultasHistorial = async () => {
 
 
 // ============================================================================
-// MIS PARTES: NUEVAS FUNCIONES EXCLUSIVAS PARA EL MÓDULO DE SERVICIOS
+// NUEVAS FUNCIONES EXCLUSIVAS PARA EL MÓDULO DE SERVICIOS
 // ============================================================================
 export const obtenerServiciosDB = async () => {
   const db = await configurarBD();
@@ -167,28 +145,48 @@ export const obtenerServiciosDB = async () => {
 };
 
 
-// Parte de Inventario: Registrar un nuevo producto o artículo
+// ============================================================================
+// MÓDULO DE INVENTARIO (CORREGIDO PARA USAR ENLACE DINÁMICO .put())
+// ============================================================================
+export const obtenerProductosDB = async () => {
+  const db = await configurarBD();
+  return db.getAll("inventario");
+};
+
+export const obtenerLotesDB = async () => {
+  const db = await configurarBD();
+  return db.getAll("lotes_peps");
+};
+
 export const registrarProductoDB = async (producto) => {
   const db = await configurarBD();
   return db.add("inventario", producto);
 };
 
-// Parte de Inventario: Actualizar datos de un producto (Edición)
 export const actualizarProductoDB = async (producto) => {
   const db = await configurarBD();
   return db.put("inventario", producto);
 };
 
-// Parte de Inventario: Eliminar la ficha de un producto del catálogo
 export const eliminarProductoDB = async (id) => {
   const db = await configurarBD();
   return db.delete("inventario", id);
 };
 
-// Parte de Inventario: Registrar un nuevo lote en el almacén (Entradas)
+//inventario
 export const registrarLoteDB = async (lote) => {
   const db = await configurarBD();
-  return db.add("lotes_peps", lote);
+  return db.put("lotes_peps", lote);
+};
+
+export const actualizarLoteDB = async (lote) => {
+  const db = await configurarBD();
+  return db.put("lotes_peps", lote);
+};
+
+export const eliminarLoteDB = async (id) => {
+  const db = await configurarBD();
+  return db.delete("lotes_peps", id);
 };
 
 
