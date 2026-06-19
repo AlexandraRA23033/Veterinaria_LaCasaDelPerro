@@ -1,16 +1,31 @@
 import { buscarUsuario, registrarUsuario, actualizarUsuario} from '../../base-datos/configuracion';
+import { hashPassword, verificarPassword } from './EncriptacionService';
 
 export const loginUsuario = async (correo, password) => {
     const user = await buscarUsuario(correo);
     if (!user) throw new Error('Correo o contraseña incorrectos.');
-    if (user.password !== password) throw new Error('Correo o contraseña incorrecta');
+   
+    if(!user.salt){
+        if(user.password !== password) throw new Error('Correo o contraseña incorrectos.');
+        const { hash, salt } = await hashPassword(password);
+        await actualizarUsuario({...user, password: hash, salt });
+        return {...user, password: hash, salt};
+    }
+   
+    const esValida = await verificarPassword(password, user.password, user.salt);
+    if (!esValida) throw new Error('Correo o contraseña incorrectos.');
     return user;
 }
 
 export const crearUsuario = async (datos) =>{
     const existente = await buscarUsuario(datos.correo);
     if(existente) throw new Error('Este correo ya esta registrado');
-    await registrarUsuario(datos);
+    const { hash, salt } = await hashPassword(datos.password);
+    await registrarUsuario({
+        ...datos,
+        password: hash,
+        salt,
+    });
 }
 
 export const editarUsuario = async (usuarioActual, datosNuevos) => {
