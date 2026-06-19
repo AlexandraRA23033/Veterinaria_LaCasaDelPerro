@@ -33,6 +33,7 @@ import AlertaStock from "./componentes/inventario/AlertaStock";
 import TablaServicios from "./componentes/inventario/TablaServicios";
 import { obtenerProductosDB, obtenerLotesDB } from "./base-datos/configuracion";
 import DashboardUsuario from "./componentes/panel-control/DashboardUsuario";
+import PuntoDeVenta from "./componentes/ventas/puntoVenta";
 
 
 function AppContent() {
@@ -249,6 +250,17 @@ function AppContent() {
                         Servicios Veterinarios
                       </a>
                     </li>
+                    <li>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goTo("/ventas");
+                        }}
+                      >
+                        punto de venta
+                      </a>
+                    </li>
                   </>
                 ) : (
                   <>
@@ -342,7 +354,7 @@ function AppContent() {
             <Route
               path="/mascotas/formularioMascotas"
               element={
-                <RutaProtegida>        {/*permite a ambos agregar mascota */}
+                <RutaProtegida>     
                   <FormularioMascotas />
                 </RutaProtegida>
               }
@@ -352,14 +364,17 @@ function AppContent() {
               </RutaProtegida>
             }/>
             <Route path="/mascotas/expediente" element={
-              <RutaProtegida ><VerExpedienteMascota />    {/*permite a ambos ver expediente */}
+              <RutaProtegida ><VerExpedienteMascota />    
               </RutaProtegida>
             }/>
             <Route path="/mascotas/editar" element={
-              <RutaProtegida><EditarExpediente /> {/*permite a ambos editar */}
+              <RutaProtegida><EditarExpediente /> 
               </RutaProtegida>
             }/>
-            
+            <Route path="/ventas" element={
+              <RutaProtegida><PuntoDeVenta /> 
+              </RutaProtegida>
+            }/>
             <Route
               path="/Dashboard-admin/inventario"
               element={
@@ -431,7 +446,7 @@ function AppContent() {
             <Route
               path="/usuarios/editar"
               element={
-                <RutaProtegida > {/**Quitamos rolRequerido = "admin" */}
+                <RutaProtegida > 
                   <EditarUsuario />
                 </RutaProtegida>
               }

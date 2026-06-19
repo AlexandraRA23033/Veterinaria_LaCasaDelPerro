@@ -35,7 +35,7 @@ export const configurarBD = async () => {
         });
       }
       
-      // Lotes PEPS (Modificado: Iniciará vacío y limpio desde cero)
+      // Lotes PEPS 
       if (!db.objectStoreNames.contains("lotes_peps")) {
         db.createObjectStore("lotes_peps", {
           keyPath: "id",
@@ -55,9 +55,13 @@ export const configurarBD = async () => {
           keyPath: "id",
           autoIncrement: true,
         });
-
       }
-      // ────────────────────────────────────────────────────────────────────────────────
+      //ventas
+      if (!db.objectStoreNames.contains("ventas"))
+        db.createObjectStore("ventas", {
+       keyPath: "id",
+        autoIncrement: true 
+      });
     },
   });
 };
@@ -103,13 +107,7 @@ export const eliminarPaciente = async (id) => {
   return db.delete("pacientes", id);
 };
 
-
-
-
-
-// ============================================================================
-// NUEVAS FUNCIONES DE ENLACE: CONSULTAS Y AGENDA
-// ============================================================================
+// CONSULTAS Y AGENDA
 export const guardarCitaAgenda = async (cita) => {
   const db = await configurarBD();
   return db.add("agenda", cita);
@@ -136,18 +134,14 @@ export const obtenerConsultasHistorial = async () => {
 };
 
 
-// ============================================================================
-// NUEVAS FUNCIONES EXCLUSIVAS PARA EL MÓDULO DE SERVICIOS
-// ============================================================================
+//MÓDULO DE SERVICIOS
 export const obtenerServiciosDB = async () => {
   const db = await configurarBD();
   return db.getAll("servicios");
 };
 
 
-// ============================================================================
-// MÓDULO DE INVENTARIO (CORREGIDO PARA USAR ENLACE DINÁMICO .put())
-// ============================================================================
+// MÓDULO DE INVENTARIO 
 export const obtenerProductosDB = async () => {
   const db = await configurarBD();
   return db.getAll("inventario");
@@ -209,4 +203,18 @@ export const eliminarServicioDB = async (id) => {
 // Parte de Inventario: Cálculo matemático para auditar el Stock Total unificado
 export const calcularStockTotalPEPS = (lotesDelProducto) => {
   return lotesDelProducto.reduce((total, lote) => total + (parseInt(lote.cantidad) || 0), 0);
+};
+
+//Punto de venta 
+export const guardarVentaDB = async (venta) => {
+  const db = await configurarBD();
+  return db.add("ventas", venta);
+};
+export const obtenerVentasDB = async () => {
+  const db = await configurarBD();
+  return db.getAll("ventas");
+};
+export const obtenerVentaDB = async (id) => {
+  const db = await configurarBD();
+  return db.get("ventas", id);
 };

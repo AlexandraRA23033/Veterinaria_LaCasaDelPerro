@@ -69,7 +69,7 @@ export default function FormularioExpediente() {
       });
 
       setExito(true);
-      setTimeout(() => navigate("/Dashboard-admin/gestio"), 2000);
+      setTimeout(() => navigate(-1), 2000);
     } catch (err) {
       console.error(err);
       setError("Error al guardar. Intenta de nuevo.");
@@ -144,7 +144,7 @@ export default function FormularioExpediente() {
         <SeccionHistorialMedico form={mascota} onChange={handleCampo} />
 
         <div className="d-flex j-cont-end gap-1">
-          <button type="button" className="btn-outline-secondary" onClick={() => navigate("/gestion")} disabled={guardando}>
+          <button type="button" className="btn-outline-secondary" onClick={() => navigate(-1)} disabled={guardando}>
             Cancelar
           </button>
           <button type="submit" className="btn-primary" disabled={guardando}>
