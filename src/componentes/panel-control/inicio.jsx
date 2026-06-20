@@ -253,7 +253,7 @@ const Inicio = () => {
             </div>
             <div className="col-md-4 text-center">
               <a href="/registro" className="btn-primary btn-md">
-                Crear cuenta y agendar
+                Crear cuenta y expediente
               </a>
             </div>
           </div>
