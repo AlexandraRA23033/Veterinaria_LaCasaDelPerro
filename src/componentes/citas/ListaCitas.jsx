@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import EstadoCita from './EstadoCita';
 
-/* 👇 CORREGIDO: Agregamos cargarCitas aquí */
 const ListaCitas = ({ citas, alCambiarEstado, cargarCitas }) => {
   
   const obtenerClaseEstado = (estado) => {
@@ -18,7 +17,7 @@ const ListaCitas = ({ citas, alCambiarEstado, cargarCitas }) => {
     <div className="mt-3">
       <div className="d-flex j-cont-bet align-item mb-1">
         <div>
-          <h3 className="fs-1-5 fw-bold text-primary">📋 Panel de Gestión de Citas</h3>
+          <h3 className="fs-1-5 fw-bold text-primary"> Panel de Gestión de Citas</h3>
           <p className="text-muted">
             {citas.length} registro{citas.length !== 1 ? "s" : ""} en el sistema de reservas
           </p>
@@ -46,14 +45,14 @@ const ListaCitas = ({ citas, alCambiarEstado, cargarCitas }) => {
               {citas.map((cita) => (
                 <tr key={cita.id}>
                   <td>
-                    <strong className="text-primary">🐾 {cita.mascota}</strong>
+                    <strong className="text-primary"> {cita.mascota}</strong>
                     <br />
                     <span className="text-muted fs-0-85">Dueño: {cita.dueno}</span>
                   </td>
 
                   <td>
-                    <div>📅 {cita.fecha}</div>
-                    <span className="fw-bold text-accent">⏰ {cita.hora}</span>
+                    <div> {cita.fecha}</div>
+                    <span className="fw-bold text-accent"> {cita.hora}</span>
                   </td>
 
                   <td>
@@ -80,7 +79,7 @@ const ListaCitas = ({ citas, alCambiarEstado, cargarCitas }) => {
                   </td>
 
                   <td>
-                    {/* 👇 CORREGIDO: Le inyectamos la prop de actualización al componente de la API */}
+
                     <EstadoCita 
                       cita={cita} 
                       alCambiarEstado={alCambiarEstado} 

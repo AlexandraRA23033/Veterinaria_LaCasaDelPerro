@@ -4,9 +4,8 @@ import { configurarBD } from "../../base-datos/configuracion";
 
 const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
     const [procesando, setProcesando] = useState(false);
-    const navigate = useNavigate(); // 🚀 Inicialización del navegador de rutas
+    const navigate = useNavigate();
     
-    // ➕ AGREGAR ESTO:
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modalTitulo, setModalTitulo] = useState('');
     const [modalMensaje, setModalMensaje] = useState('');
@@ -53,9 +52,9 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
         let bodyMensaje = '';
 
         if (cita.estado === 'Pospuesta') {
-            bodyMensaje = `🐾 *La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Te informamos que la cita de tu mascota *${cita.mascota}* para el servicio de *${cita.servicio}* ha sido reprogramada con éxito.\n\n *Su cita es el día:* ${fechaFormateada}\n *A la hora:* ${horaFormateada}\n\n¡Te esperamos en este nuevo horario!`;
+            bodyMensaje = `*La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Te informamos que la cita de tu mascota *${cita.mascota}* para el servicio de *${cita.servicio}* ha sido reprogramada con éxito.\n\n *Su cita es el día:* ${fechaFormateada}\n *A la hora:* ${horaFormateada}\n\n¡Te esperamos en este nuevo horario!`;
         } else {
-            bodyMensaje = `🐾 *La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Queremos confirmarte que la cita para tu mascota *${cita.mascota}* ha sido programada de manera exitosa.\n\n*Su cita es el día:* ${fechaFormateada}\n*A la hora:* ${horaFormateada}\n\n¡Te esperamos!`;
+            bodyMensaje = `*La Casa del Perro* 🐾\n\n¡Hola ${cita.dueno}! Queremos confirmarte que la cita para tu mascota *${cita.mascota}* ha sido programada de manera exitosa.\n\n*Su cita es el día:* ${fechaFormateada}\n*A la hora:* ${horaFormateada}\n\n¡Te esperamos!`;
         }
 
         const payloadPlantilla = {
@@ -127,7 +126,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
 
         let mensajeTexto = '';
         if (nuevoEstado === 'Completada') {
-            mensajeTexto = `🐾 ¡Hola ${cita.dueno}! Tu mascota ${cita.mascota} ha terminado su atención de "${cita.servicio}". ¡Está listo para ser recogido! Total: $${cita.precio.toFixed(2)}.`;
+            mensajeTexto = `¡Hola ${cita.dueno}! Tu mascota ${cita.mascota} ha terminado su atención de "${cita.servicio}". ¡Está listo para ser recogido! Total: $${cita.precio.toFixed(2)}.`;
         } else if (nuevoEstado === 'Cancelada') {
             mensajeTexto = `¡Hola ${cita.dueno}! Te confirmamos que la cita para ${cita.mascota} ha sido cancelada exitosamente.`;
         }
@@ -192,7 +191,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
             </button>
           </div>
         <div className={`modal ${modalAbierto ? 'is-open' : ''}`}>
-            <div className="modal-content" style={{ padding: '20px', maxWidth: '400px', margin: 'auto', background: '#fff', borderRadius: '8px' }}>
+            <div className="modal-content" style={{ padding: '20px', maxWidth: '400px', margin: 'auto', background: '#2e3338', borderRadius: '8px' }}>
                 <div className="modal-header d-flex j-cont-bet align-item mb-1" style={{ borderBottom: '1px solid #eee', paddingBottom: '5px' }}>
                     <h4 className="fw-bold text-dark">{modalTitulo}</h4>
                     <button className="btn-close" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => setModalAbierto(false)}>×</button>
