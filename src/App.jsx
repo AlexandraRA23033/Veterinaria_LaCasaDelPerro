@@ -20,13 +20,12 @@ import Gestion from "./componentes/panel-control/Gestion";
 import FormularioExpediente from "./componentes/mascotas/formularioExpediente";
 import FormularioMascotas from "./componentes/mascotas/formularioMascotas";
 import AgendarCita from "./componentes/citas/AgendarCita";
-//import EstadoCita from "./componentes/citas/EstadoCita";
-//import ListaCitas from "./componentes/citas/ListaCitas";
 import VistaRapida from "./componentes/citas/VistaRapida";
 import HistorialCitas from "./componentes/citas/HistorialCitas";
 import VerMascotas from "./componentes/mascotas/VerMascotas";
 import VerExpedienteMascota from "./componentes/mascotas/VerExpedienteMascota";
 import EditarExpediente from "./componentes/mascotas/editarMascota";
+import MisMascotas from "./componentes/usuarios/misMascotas";
 
 import TablaInventario from "./componentes/inventario/TablaInventario";
 import AlertaStock from "./componentes/inventario/AlertaStock";
@@ -280,7 +279,7 @@ function AppContent() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          goTo("/citass");
+                          goTo("/mis-mascotas");
                         }}
                       >
                         Mis citas
@@ -448,6 +447,14 @@ function AppContent() {
               element={
                 <RutaProtegida > 
                   <EditarUsuario />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/mis-mascotas"
+              element={
+                <RutaProtegida > 
+                  <MisMascotas />
                 </RutaProtegida>
               }
             />
