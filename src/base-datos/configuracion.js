@@ -218,3 +218,7 @@ export const obtenerVentaDB = async (id) => {
   const db = await configurarBD();
   return db.get("ventas", id);
 };
+export const limpiarVentasDB = async () => {
+  const db = await configurarBD();
+  return db.clear("ventas");
+};
