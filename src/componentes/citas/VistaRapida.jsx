@@ -63,7 +63,7 @@ export default function VistaRapida() {
           sexo:          mascota.sexo          || "",
           color:         mascota.color         || "",
           peso:          mascota.peso          || "",
-          vacunas:       mascota.vacunas       || "",
+          vacunas:        mascota.estaVacunado === true || mascota.estaVacunado === "Sí" ? "Sí" : "No",
           fechaRegistro: mascota.fechaRegistro || "",
         },
         nombreUsuario:   usuario.nombre_completo,

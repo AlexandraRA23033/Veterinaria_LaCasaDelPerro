@@ -330,7 +330,7 @@ export default function AgendarCita() {
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Vacunas</div>
-              <div><span className="badge success">{mascota?.vacunas && mascota.vacunas.trim() !== "" ? mascota.vacunas : "Ninguna"}</span></div>
+              <div><span className={`badge ${mascota?.vacunas === "Sí" ? "success" : "secondary"}`}>{mascota?.vacunas === "Sí" ? "Vacunado" : "Sin vacunar"}</span></div>
             </div>
             <div style={{ flex: '1', minWidth: '120px' }}>
               <div className="text-muted fs-0-8 fw-bold text-uppercase">Fecha Registro</div>
