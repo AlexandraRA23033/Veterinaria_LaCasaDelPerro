@@ -110,7 +110,8 @@ export const eliminarPaciente = async (id) => {
 // CONSULTAS Y AGENDA
 export const guardarCitaAgenda = async (cita) => {
   const db = await configurarBD();
-  return db.add("agenda", cita);
+  // Se cambia .add() por .put() para que actualice si la cita ya existe (al posponer)
+  return db.put("agenda", cita);
 };
 
 export const actualizarCitaAgenda = async (cita) => {
@@ -125,7 +126,8 @@ export const obtenerCitasAgenda = async () => {
 
 export const guardarConsultaHistorial = async (consulta) => {
   const db = await configurarBD();
-  return db.add("consultas", consulta);
+  // Se cambia .add() por .put() para evitar colisiones de ID duplicados en el historial
+  return db.put("consultas", consulta);
 };
 
 export const obtenerConsultasHistorial = async () => {

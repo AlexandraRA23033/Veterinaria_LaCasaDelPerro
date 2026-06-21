@@ -4,22 +4,29 @@ import { configurarBD } from "../../base-datos/configuracion";
 
 export default function VistaRapida() {
   const navigate = useNavigate();
+  // ESTADOS LOCALES DEL COMPONENTE
+  const [usuarios,  setUsuarios]  = useState([]); // Almacena el listado de clientes/propietarios filtrados
+  const [pacientes, setPacientes] = useState([]); // Almacena el listado global de mascotas registradas
+  const [cargando,  setCargando]  = useState(true); // Flag de control para manejar la interfaz de carga reactiva
+  const [busqueda,  setBusqueda]  = useState(""); // Almacena el término de búsqueda ingresado por el usuario
 
-  const [usuarios,  setUsuarios]  = useState([]);
-  const [pacientes, setPacientes] = useState([]);
-  const [cargando,  setCargando]  = useState(true);
-  const [busqueda,  setBusqueda]  = useState("");
+  // EFECTOS Y FLUJOS DE CARGA ASÍNCRONA
+  // Gatillo inicial que dispara la recolección de datos desde la base de datos local al montar el componente
+  useEffect(() => { 
+    cargarDatos(); 
+  }, []);
 
-  useEffect(() => { cargarDatos(); }, []);
-
+  // Consulta concurrentemente las colecciones de IndexedDB mediante promesas simultáneas
   async function cargarDatos() {
     setCargando(true);
     try {
       const db = await configurarBD();
+      // Desestructura el arreglo de resultados de ambas consultas asíncronas paralelas
       const [todosUsuarios, todosPacientes] = await Promise.all([
         db.getAll("usuarios"),
         db.getAll("pacientes"),
       ]);
+      // Excluye los perfiles administrativos para listar únicamente a los clientes comunes
       setUsuarios(todosUsuarios.filter(u => u.rol !== "admin"));
       setPacientes(todosPacientes);
     } catch (err) {
@@ -28,30 +35,37 @@ export default function VistaRapida() {
       setCargando(false);
     }
   }
-
-  // Una fila por cada par dueño-mascota
+  // PROCESAMIENTO Y CRUCE DE INFORMACIÓN (JOIN)
+  // Estructura una matriz plana intermedia vinculando cada propietario con sus respectivas mascotas
   const filas = [];
   usuarios.forEach(usuario => {
+    // Relaciona mediante clave foránea (emailUsuario -> correo) el dueño con la mascota
     const mascotas = pacientes.filter(p => p.emailUsuario === usuario.correo);
+    
     if (mascotas.length === 0) {
+      // Si el cliente no posee mascotas asociadas, se genera una fila con referencia nula
       filas.push({ usuario, mascota: null });
     } else {
+      // Si el cliente posee una o más mascotas, se desglosa una fila por cada una de ellas
       mascotas.forEach(mascota => filas.push({ usuario, mascota }));
     }
   });
 
-  // Ordenar alfabéticamente por nombre del dueño
+  // Ordenamiento lexicográfico ascendente basado en el nombre completo del propietario
   filas.sort((a, b) => a.usuario.nombre_completo.localeCompare(b.usuario.nombre_completo));
 
-  // Filtrado por nombre de dueño o de mascota
+  // FILTRADO DINÁMICO DE DATOS
   const filasFiltradas = filas.filter(({ usuario, mascota }) => {
     const termino = busqueda.toLowerCase();
+    // Evalúa si el término coincide de manera parcial con el dueño o el paciente veterinario
     return (
       usuario.nombre_completo?.toLowerCase().includes(termino) ||
       mascota?.nombre?.toLowerCase().includes(termino)
     );
   });
 
+  // NAVEGACIÓN Y TRANSFERENCIA DE ESTADOS
+  // Serializa los datos del cliente y su mascota para inyectarlos en el estado del enrutador hacia el formulario de citas
   function irAgendarCita(usuario, mascota) {
     navigate("/citas", {
       state: {
@@ -63,7 +77,8 @@ export default function VistaRapida() {
           sexo:          mascota.sexo          || "",
           color:         mascota.color         || "",
           peso:          mascota.peso          || "",
-          vacunas:        mascota.estaVacunado === true || mascota.estaVacunado === "Sí" ? "Sí" : "No",
+          // Estandariza la flag de inmunización en una cadena predecible ('Sí' / 'No')
+          vacunas:       mascota.estaVacunado === true || mascota.estaVacunado === "Sí" ? "Sí" : "No",
           fechaRegistro: mascota.fechaRegistro || "",
         },
         nombreUsuario:   usuario.nombre_completo,
@@ -73,6 +88,7 @@ export default function VistaRapida() {
     });
   }
 
+  // RETORNO Y CONTROL GRÁFICO DEL DOM
   return (
     <div className="container mt-2">
 
@@ -83,7 +99,7 @@ export default function VistaRapida() {
         </p>
       </header>
 
-      {/* Buscador */}
+      {/* Componente Buscador Reactivo */}
       <div className="form-group mb-2">
         <input
           type="text"
@@ -94,8 +110,10 @@ export default function VistaRapida() {
         />
       </div>
 
+      {/* Estado Transicional de Carga */}
       {cargando && <p className="text-muted">Cargando registros...</p>}
 
+      {/* Vista de Excepción: Cero Coincidencias */}
       {!cargando && filasFiltradas.length === 0 && (
         <div className="alerta primary text-center">
           {filas.length === 0
@@ -104,6 +122,7 @@ export default function VistaRapida() {
         </div>
       )}
 
+      {/* Tabla Matriz Relacional de Datos */}
       {!cargando && filasFiltradas.length > 0 && (
         <div className="table-container shadow-sm br-1">
           <table className="table table-clara-primary table-bordered">
@@ -117,12 +136,17 @@ export default function VistaRapida() {
             <tbody>
               {filasFiltradas.map(({ usuario, mascota }, index) => (
                 <tr key={index}>
+                  {/* Identidad del Propietario */}
                   <td><strong>{usuario.nombre_completo}</strong></td>
+                  
+                  {/* Identidad del Paciente (Mascota) con validación de existencia */}
                   <td>
                     {mascota
                       ? <span>{mascota.nombre}</span>
                       : <span className="text-muted italic">Sin mascotas registradas</span>}
                   </td>
+                  
+                  {/* Control de Acciones condicionado por la existencia de la mascota */}
                   <td style={{ textAlign: "center" }}>
                     {mascota ? (
                       <button

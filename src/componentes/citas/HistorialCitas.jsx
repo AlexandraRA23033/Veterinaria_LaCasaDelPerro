@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { obtenerCitasAgenda, actualizarCitaAgenda } from "../../base-datos/configuracion";
-import ListaCitas from "./ListaCitas"; 
+import ListaCitas from "./ListaCitas"; //Importación del componente que renderiza la tabla
 
 export default function HistorialCitas() {
-  const [citas, setCitas] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  // ESTADOS LOCALES DEL COMPONENTE
+  const [citas, setCitas] = useState([]); // Almacena la lista completa de citas recuperadas de la base de datos
+  const [cargando, setCargando] = useState(true); // Controla el renderizado de la pantalla de carga preliminar
 
+  // FLUJO DE CARGA DE DATOS
+  // Consulta la base de datos IndexedDB para obtener los registros actualizados de la agenda
   const cargarCitasDelSistema = async () => {
     try {
       const datos = await obtenerCitasAgenda();
@@ -17,10 +20,13 @@ export default function HistorialCitas() {
     }
   };
 
+  // Ejecuta la carga inicial de datos en el ciclo de montaje del componente
   useEffect(() => {
     cargarCitasDelSistema();
   }, []);
 
+  // MANEJADORES DE EVENTOS / CALLBACKS
+  // Modifica de forma asíncrona el estado de una cita y sincroniza los cambios de forma persistente
   const handleCambiarEstado = async (idCita, nuevoEstado) => {
     try {
       const citaExistente = citas.find(c => c.id === idCita);
@@ -31,27 +37,35 @@ export default function HistorialCitas() {
         estado: nuevoEstado 
       };
 
+      // Actualiza el registro persistente en el almacenamiento local
       await actualizarCitaAgenda(citaActualizada);
+      
+      // Refresca la memoria de la aplicación consultando nuevamente la base de datos
       await cargarCitasDelSistema(); 
     } catch (err) {
       console.error("Error al actualizar el estado e intentar notificar:", err);
     }
   };
-const totalIngresosRealizados = citas
-  .filter(cita => cita.estado === 'Completada')
-  .reduce((suma, cita) => suma + (Number(cita.precio) || 0), 0);
 
+ // MÉTRICAS Y PROCESAMIENTO DE DATOS
+  // Filtra las citas completadas y calcula la sumatoria totalizada de ingresos monetarios
+  const totalIngresosRealizados = citas
+    .filter(cita => cita.estado === 'Completada')
+    .reduce((suma, cita) => suma + (Number(cita.precio) || 0), 0);
 
+  // Contadores analíticos basados en la longitud de arreglos filtrados por estado
   const totalCompletadas = citas.filter(cita => cita.estado === 'Completada').length;
   const totalPospuestas = citas.filter(cita => cita.estado === 'Pospuesta').length;
   const totalCanceladas = citas.filter(cita => cita.estado === 'Cancelada').length;
 
+  // RENDERIZADO DE LA INTERFAZ DE USUARIO
   return (
     <div className="container mt-2">
       {cargando ? (
         <p className="text-muted">Cargando historial clínico y citas...</p>
       ) : (
         <>
+          {/* SECCIÓN SUPERIOR: TARJETAS DE INDICADORES ANALÍTICOS */}
           <div className="d-flex gap-2 mb-3 f-wrap">
             
             {/* Tarjeta de Ingresos */}
@@ -80,6 +94,8 @@ const totalIngresosRealizados = citas
               <span className="badge danger fs-1-1 fw-bold mt-0-5">{totalCanceladas}</span>
             </div>
           </div>
+
+          {/* VISTA DE TABLA: Transferencia de propiedades y manejadores al subcomponente */}
           <ListaCitas 
             citas={citas} 
             alCambiarEstado={handleCambiarEstado} 
