@@ -17,7 +17,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
         setModalAbierto(true);
     };
 
-    const TOKEN = 'EAASPf8N8sxoBR2dj0oOBVYZAtik4Tf1eEooyHTFZBJ6LiGqFQm7YMDlZAiT31mnLVraeyMKRrsHogE9alqlj32rsDl642aHLH69MJM9CBksghkYZA9vw53UAm6P4eMr1MlQynAVTvUbkcUj6oZCAHqbOxZAooMYZB4qtdaQsKAhcqer67Bqu3tZBqtKIEzJ2nZB7hjxX3glDtVPuWZAjgZAGnSwtRdVi6mctmPyMQibtZAEfu9dZA0ZBeWm13G3T90MZBxP5ChBuZC5kcT7zKJofadthiZA6EGY6s'; 
+    const TOKEN = 'EAASPf8N8sxoBR9ATAcHLhwQT8j0VdBB8bax3IKBCGzpZCRXSYiBRWHsEALh5QnmWE0VzOq409RAWp4e1Fmokv1VpqAZABUEvrC0onZBwdsfh4oFo9sGjRdrgECjZCHtNbhbN0zSmt5kkPTNIEUuYUuzcrVifUYfdCZAR0GB6nF7KgkyDAoKvPhJQMtuE72wMnBRY92kxMdBuUJvSbZAByCHJeUn5zOQkaP660DEy1iFX5ZCTSXRSIZBIKhtfGxScPrX0c62zYa3qpfBkb9TyxWyIaop1'; 
     const PHONE_ID = '1199483279910039'; 
     const TELEFONO_DESTINO = '50376948130'; 
 
@@ -191,7 +191,7 @@ const EstadoCita = ({ cita, alCambiarEstado, cargarCitas }) => {
             </button>
           </div>
         <div className={`modal ${modalAbierto ? 'is-open' : ''}`}>
-            <div className="modal-content" style={{ padding: '20px', maxWidth: '400px', margin: 'auto', background: '#2e3338', borderRadius: '8px' }}>
+            <div className="modal-content" style={{ padding: '20px', maxWidth: '400px', margin: 'auto', background: '#ffff', borderRadius: '8px' }}>
                 <div className="modal-header d-flex j-cont-bet align-item mb-1" style={{ borderBottom: '1px solid #eee', paddingBottom: '5px' }}>
                     <h4 className="fw-bold text-dark">{modalTitulo}</h4>
                     <button className="btn-close" style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => setModalAbierto(false)}>×</button>
