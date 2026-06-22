@@ -1,22 +1,15 @@
 import { openDB } from "idb";
+import { hashPassword } from "../componentes/usuarios/EncriptacionService";
 
 const NOMBRE_BD = "VeterinariaDB";
 // Mantenemos estrictamente la versión 1 
 const VERSION_BD = 1;
 
 export const configurarBD = async () => {
-  return openDB(NOMBRE_BD, VERSION_BD, {
+  const db = await openDB(NOMBRE_BD, VERSION_BD, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("usuarios")) {
-        const store = db.createObjectStore("usuarios", { keyPath: "correo" });
-        // Admin de prueba con todos los campos completos
-        store.add({
-          correo: "admin@ues.edu.sv",
-          password: "admin123",
-          nombre_completo: "Administrador",
-          telefono: "2222-3333",
-          rol: "admin",
-        });
+        db.createObjectStore("usuarios", { keyPath: "correo" });
       }
       if (!db.objectStoreNames.contains("pacientes"))
         db.createObjectStore("pacientes", {
@@ -64,6 +57,23 @@ export const configurarBD = async () => {
       });
     },
   });
+
+
+  //Este bloque de codigo sirve para hashear la contraseña del admin si aun no existe e n la db
+   const adminExistente = await db.get("usuarios", "admin@ues.edu.sv");
+  if (!adminExistente) {
+    const { hash, salt } = await hashPassword("Admin.Vet2026");
+    await db.add("usuarios", {
+      correo: "admin@ues.edu.sv",
+      password: hash,
+      salt,
+      nombre_completo: "Administrador",
+      telefono: "7712-8139",
+      rol: "admin",
+    });
+  }
+
+  return db;
 };
 
 export const buscarUsuario = async (correo) => {
