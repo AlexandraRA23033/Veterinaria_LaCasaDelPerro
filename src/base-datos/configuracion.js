@@ -1,7 +1,7 @@
 import { openDB } from "idb";
 
 const NOMBRE_BD = "VeterinariaDB";
-// Mantenemos estrictamente la versión 1 por requerimiento del proyecto
+// Mantenemos estrictamente la versión 1 
 const VERSION_BD = 1;
 
 export const configurarBD = async () => {
@@ -27,7 +27,7 @@ export const configurarBD = async () => {
       if (!db.objectStoreNames.contains("agenda"))
         db.createObjectStore("agenda", { keyPath: "id", autoIncrement: true });
 
-      // Productos de Inventario Iniciará vacío y limpio desde cero
+      // Productos de Inventario Inicia vacio
       if (!db.objectStoreNames.contains("inventario")) {
         db.createObjectStore("inventario", {
           keyPath: "id",
@@ -136,73 +136,79 @@ export const obtenerConsultasHistorial = async () => {
 };
 
 
-//MÓDULO DE SERVICIOS
+// Permite consultar y traer la lista completa de todos los tratamientos y atenciones médicas registradas.
 export const obtenerServiciosDB = async () => {
   const db = await configurarBD();
   return db.getAll("servicios");
 };
 
-
-// MÓDULO DE INVENTARIO 
+// Trae la lista de todos los nombres de artículos e insumos guardados en el sistema para mostrarlos en la tabla principal.
 export const obtenerProductosDB = async () => {
   const db = await configurarBD();
   return db.getAll("inventario");
 };
 
+// Extrae todos los paquetes de stock con sus respectivas fechas de vencimiento para poder ordenarlos por orden de llegada.
 export const obtenerLotesDB = async () => {
   const db = await configurarBD();
   return db.getAll("lotes_peps");
 };
 
+// Guarda un nuevo artículo o insumo en el catálogo para que la clínica sepa que ahora cuenta con ese tipo de producto.
 export const registrarProductoDB = async (producto) => {
   const db = await configurarBD();
   return db.add("inventario", producto);
 };
 
+// Sobreescribe los datos de un artículo (como cambiar su nombre o tipo) cuando el usuario edita su ficha desde el formulario.
 export const actualizarProductoDB = async (producto) => {
   const db = await configurarBD();
   return db.put("inventario", producto);
 };
 
+// Quita de forma definitiva un tipo de producto del catálogo cuando la clínica ya no planea manejarlo más.
 export const eliminarProductoDB = async (id) => {
   const db = await configurarBD();
   return db.delete("inventario", id);
 };
 
-//inventario
+// Registra la entrada al almacén de un paquete nuevo de unidades con su propia fecha de vencimiento y cantidad.
 export const registrarLoteDB = async (lote) => {
   const db = await configurarBD();
   return db.put("lotes_peps", lote);
 };
 
+// Modifica los datos de cantidad o fechas de un paquete específico de mercadería en caso de que se haya cometido un error al digitarlo.
 export const actualizarLoteDB = async (lote) => {
   const db = await configurarBD();
   return db.put("lotes_peps", lote);
 };
 
+// Da de baja o elimina un paquete de stock específico del sistema cuando se acaba o cuando vence.
 export const eliminarLoteDB = async (id) => {
   const db = await configurarBD();
   return db.delete("lotes_peps", id);
 };
 
-
+// Añade una nueva prestación o servicio al menú clínico para que el personal pueda empezar a ofrecerlo y cobrarlo.
 export const registrarServicioDB = async (servicio) => {
   const db = await configurarBD();
   return db.add("servicios", servicio);
 };
 
+// Guarda los cambios de nombre, categoría o precio de un servicio de la clínica cuando se necesitan actualizar los costos.
 export const actualizarServicioDB = async (servicio) => {
   const db = await configurarBD();
   return db.put("servicios", servicio);
 };
 
+// Desactiva o borra permanentemente una prestación médica que la clínica ya no va a ofrecer a los clientes.
 export const eliminarServicioDB = async (id) => {
   const db = await configurarBD();
   return db.delete("servicios", id);
 };
 
-
-// Parte de Inventario: Cálculo matemático para auditar el Stock Total unificado
+// Suma las cantidades individuales de cada paquete o lote que pertenezca a un mismo artículo para mostrar el inventario total disponible.
 export const calcularStockTotalPEPS = (lotesDelProducto) => {
   return lotesDelProducto.reduce((total, lote) => total + (parseInt(lote.cantidad) || 0), 0);
 };

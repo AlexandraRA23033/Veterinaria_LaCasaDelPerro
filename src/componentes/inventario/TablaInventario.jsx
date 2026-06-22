@@ -9,24 +9,26 @@ import {
 } from '../../base-datos/configuracion';
 
 const TablaInventario = ({ productos, lotes }) => {
+  // Guarda la fecha actual para que el sistema pueda validar que no se ingresen medicamentos vencidos.
   const fechaHoy = new Date().toISOString().split('T')[0];
 
-  // Estado estructural para entidades de inventario
+  // Espacios de memoria para guardar temporalmente los datos que el usuario escribe en los formularios de productos y lotes.
   const [nuevoProd, setNuevoProd] = useState({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
   const [nuevoLote, setNuevoLote] = useState({ id: null, loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
 
-  // Estados de control para flujos alternativos de edición
+  // Interruptores para saber si el usuario está creando algo nuevo o editando una información que ya existía.
   const [esEdicionProducto, setEsEdicionProducto] = useState(false);
   const [esEdicionLote, setEsEdicionLote] = useState(false);
 
-  // Estados reactivos intermedios para la trazabilidad del cambio de nombre
+  // Controlan la visibilidad y el texto de los mensajes flotantes (alertas y confirmaciones) en la pantalla.
   const [modalAlerta, setModalAlerta] = useState({ abierto: false, titulo: '', mensaje: '' });
   const [modalConfirmar, setModalConfirmar] = useState({ abierto: false, mensaje: '', accion: null });
 
+  // Buscan el nombre original de un producto antes de que sea modificado, para poder actualizar correctamente sus lotes vinculados.
   const productoOriginal = productos.find(p => p.id === nuevoProd.id);
   const nombreOriginal = productoOriginal ? productoOriginal.nombre : '';
 
-  // Interfaz de abstracción para el control de ventanas emergentes
+  // Funciones para abrir los mensajes flotantes en pantalla con textos específicos cuando ocurre un error o se requiere una confirmación.
   const dispararAlerta = (titulo, mensaje) => {
     setModalAlerta({ abierto: true, titulo, mensaje });
   };
@@ -35,7 +37,7 @@ const TablaInventario = ({ productos, lotes }) => {
     setModalConfirmar({ abierto: true, mensaje, accion: accionAAceptar });
   };
 
-  // Inicialización y limpieza del estado local de los formularios
+  // Limpia los formularios y apaga los modos de edición para regresar la pantalla a su estado inicial.
   const handleCancelarTodo = () => {
     setNuevoProd({ id: null, nombre: '', precioVenta: '', tipo: 'Medicamento' });
     setNuevoLote({ id: null, loteId: '', ingreso: fechaHoy, vencimiento: '', cantidad: '', productoNombre: '' });
@@ -43,7 +45,7 @@ const TablaInventario = ({ productos, lotes }) => {
     setEsEdicionLote(false);
   };
 
-  // Mapeo de datos del catálogo hacia el formulario de edición de productos
+  // Pasa los datos del producto seleccionado de la tabla hacia el formulario para que el usuario pueda modificarlos.
   const handleSeleccionarEditarProducto = (prod) => {
     setEsEdicionLote(false);
     setEsEdicionProducto(true);
@@ -68,7 +70,7 @@ const TablaInventario = ({ productos, lotes }) => {
     });
   };
 
-  // Mapeo de datos cronológicos hacia el formulario de corrección de lotes
+  // Pasa la información de un lote específico al formulario para corregir errores de digitación en sus cantidades o fechas.
   const handleSeleccionarEditarLoteDirecto = (lote, tipoProducto) => {
     setEsEdicionProducto(false);
     setEsEdicionLote(true);
@@ -85,11 +87,11 @@ const TablaInventario = ({ productos, lotes }) => {
     });
   };
 
-  // Orquestador transaccional para la persistencia de datos (Estrategia de Botón Único Global)
+  // Administrador principal que decide si los datos se deben registrar por primera vez o actualizar, validando que no haya campos vacíos o erróneos.
   const handleGuardarCambiosFormulario = async (e) => {
     if (e) e.preventDefault();
 
-    // Contexto: Modificación de parámetros de un Lote específico
+    // Se ejecuta si el usuario está corrigiendo un lote existente. Revisa que la cantidad sea válida y que la fecha no haya pasado.
     if (esEdicionLote && nuevoLote.id) {
       if (parseInt(nuevoLote.cantidad) <= 0) {
         dispararAlerta("Cantidad Invalida", "La cantidad debe ser mayor o igual a 1 unidad.");
@@ -118,7 +120,7 @@ const TablaInventario = ({ productos, lotes }) => {
         productoNombre: nuevoLote.productoNombre
       });
 
-    // Contexto: Modificación de metadatos de un Producto y actualización en cascada de lotes
+    // Se ejecuta si se está editando la información base de un producto. Cambia el nombre o precio y actualiza en cadena todos sus lotes guardados.
     } else if (esEdicionProducto && nuevoProd.id) {
       if (parseFloat(nuevoProd.precioVenta) <= 0) {
         dispararAlerta("Precio Invalido", "El precio de venta debe ser un número positivo.");
@@ -167,7 +169,7 @@ const TablaInventario = ({ productos, lotes }) => {
       
       await Promise.all(promesasLotes);
 
-    // Contexto: Inserción de un nuevo Lote (Generación del correlativo incremental PEPS)
+    // Se ejecuta para añadir stock nuevo a un producto. Genera un número de lote automático y ordenado.
     } else if (nuevoLote.productoNombre) {
       if (parseInt(nuevoLote.cantidad) <= 0) {
         dispararAlerta("Cantidad Invalida", "La cantidad debe ser mayor o igual a 1 unidad.");
@@ -194,7 +196,7 @@ const TablaInventario = ({ productos, lotes }) => {
         productoNombre: nuevoLote.productoNombre
       });
 
-    // Contexto: Inserción de una nueva Ficha de Producto en el catálogo base
+    // Se ejecuta cuando se crea un producto totalmente nuevo en el catálogo. Verifica que no repita el nombre de otro ya existente.
     } else if (nuevoProd.nombre.trim()) {
       if (parseFloat(nuevoProd.precioVenta) <= 0) {
         dispararAlerta("Precio Invalido", "El precio debe ser positivo.");
@@ -220,7 +222,7 @@ const TablaInventario = ({ productos, lotes }) => {
     window.location.reload();
   };
 
-  // Eliminación lógica/física de entidades vinculadas a la persistencia IndexedDB
+  // Funciones que solicitan confirmación al usuario antes de borrar permanentemente un producto o un lote de la base de datos.
   const handleBorrarProducto = (id) => {
     dispararConfirmacion("¿Estás seguro de eliminar este artículo del inventario?", async () => {
       await eliminarProductoDB(id);
@@ -235,11 +237,12 @@ const TablaInventario = ({ productos, lotes }) => {
     });
   };
 
+  // Condición lógica para ocultar o mostrar el campo de fecha de vencimiento según el tipo de artículo.
   const requiereVencimientoFiltro = nuevoProd.tipo !== "Accesorio";
 
   return (
     <div>
-      {/* Componente Modular: Modales de Interfaz de Usuario Personalizados */}
+      {/* Ventana flotante para mostrar advertencias, errores de validación o campos obligatorios vacíos */}
       <div className={`modal-alert ${modalAlerta.abierto ? 'is-open' : ''}`}>
         <div className="modal-content">
           <div className="modal-header">
@@ -258,6 +261,7 @@ const TablaInventario = ({ productos, lotes }) => {
         </div>
       </div>
 
+      {/* Ventana flotante de seguridad para que el usuario confirme si realmente desea eliminar un registro */}
       <div className={`modal ${modalConfirmar.abierto ? 'is-open' : ''} modal-primary`}>
         <div className="modal-content">
           <div className="modal-header">
@@ -283,7 +287,7 @@ const TablaInventario = ({ productos, lotes }) => {
         </div>
       </div>
 
-      {/* Componente Modular: Formulario de Configuración de Artículos */}
+      {/* Formulario para ingresar el nombre, la categoría y el precio de los productos individuales */}
       <div className="d-flex f-wrap gap-1 mb-2">
         <div className="card card-light shadow-sm br-1 f-1" style={{ opacity: esEdicionLote ? 0.6 : 1 }}>
           <div className="card-header fw-bold text-primary">
@@ -314,7 +318,7 @@ const TablaInventario = ({ productos, lotes }) => {
           </div>
         </div>
 
-        {/* Componente Modular: Formulario de Asignación de Cola PEPS */}
+        {/* Formulario para registrar las cantidades que entran al almacén, sus fechas de ingreso y vencimiento */}
         <div className="card card-light shadow-sm br-1 f-1" style={{ opacity: esEdicionProducto && !requiereVencimientoFiltro ? 0.6 : 1 }}>
           <div className="card-header fw-bold text-primary">
             {esEdicionLote ? `Corregir Parámetros de ${nuevoLote.loteId}` : "Ingresar Lote al Almacén (Cola PEPS)"}
@@ -358,7 +362,7 @@ const TablaInventario = ({ productos, lotes }) => {
         </div>
       </div>
 
-      {/* Componente Modular: Disparador Unificado Dinámico */}
+      {/* Botón centralizado que cambia de texto e instrucción según la acción que el usuario esté realizando */}
       <div className="card shadow-sm p-1 mb-3 bg-light br-1 d-flex gap-1">
         <button type="button" onClick={handleGuardarCambiosFormulario} className="btn btn-primary fw-bold f-1" style={{ padding: '12px', fontSize: '15px' }}>
           {esEdicionProducto ? "Guardar Cambios del Producto" : 
@@ -371,7 +375,7 @@ const TablaInventario = ({ productos, lotes }) => {
         )}
       </div>
 
-      {/* Componente Modular: Tabla Analítica de Existencias Totales */}
+      {/* Tabla que muestra la lista de todos los artículos registrados con su stock global y niveles de alerta */}
       <div className="table-container shadow-sm br-1 mb-3">
         <table className="table table-clara-primary table-bordered">
           <thead>
@@ -415,7 +419,7 @@ const TablaInventario = ({ productos, lotes }) => {
         </table>
       </div>
 
-      {/* Componente Modular: Línea Temporal y Auditoría de Inventario (PEPS) */}
+      {/* Tarjetas inferiores organizadas cronológicamente para controlar qué paquetes entraron primero al almacén */}
       <div className="card card-light shadow-sm br-1">
         <div className="card-header fw-bold text-dark">Línea Cronológica PEPS (Vencimientos y Almacenamiento)</div>
         <div className="card-body">
