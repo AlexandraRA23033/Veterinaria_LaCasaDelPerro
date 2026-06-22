@@ -190,7 +190,7 @@ const Estadisticas = () =>{
                                 </BarChart>
                                 
                             ): (
-                                <div className='text-center pt-5'><sapn className="text-muted">Sin registros</sapn></div>
+                                <div className='text-center pt-5'><span className="text-muted">Sin registros</span></div>
                             )}
                         </div>
                     </div>
