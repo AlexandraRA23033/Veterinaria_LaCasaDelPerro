@@ -380,8 +380,8 @@ function AppContent() {
                 <RutaProtegida rolRequerido="admin">
                   <div className="container mt-2">
                     <header className="mb-2">
-                      <h2 className="fs-2 fw-bold text-primary">Panel de Inventario Inteligente</h2>
-                      <p className="text-muted">Validación de Almacén Médica y Lotes Críticos</p>
+                      <h2 className="fs-2 fw-bold text-primary">Panel de Inventario </h2>
+                      <p className="text-muted"> Almacén de Inventario y Lotes </p>
                     </header>
                     <AlertaStock productos={productos} lotes={lotes} />
                     <TablaInventario productos={productos} lotes={lotes} />
